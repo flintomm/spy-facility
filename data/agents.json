@@ -1,0 +1,47 @@
+{
+  "agents": {
+    "Flint": {
+      "name": "Flint",
+      "level": 5,
+      "exp": 1000,
+      "nextLevel": 1500,
+      "rank": "Lead",
+      "color": "#FF8C00",
+      "deskItems": ["radio", "clipboard"],
+      "companion": "Lucky"
+    },
+    "Cipher": {
+      "name": "Cipher",
+      "level": 1,
+      "exp": 0,
+      "nextLevel": 500,
+      "rank": "Coder",
+      "color": "#00D4FF",
+      "deskItems": ["rubberDuck", "energyDrink"],
+      "companion": null
+    },
+    "Scout": {
+      "name": "Scout",
+      "level": 1,
+      "exp": 0,
+      "nextLevel": 500,
+      "rank": "Recruit",
+      "color": "#00CC66",
+      "deskItems": ["coffee", "notepad", "monitors"],
+      "companion": null
+    }
+  },
+  "rules": {
+    "shipFirstTry": 50,
+    "shipAfterFeedback": 25,
+    "breakProduction": -50,
+    "causeOutage": -100,
+    "expPerLevel": 500,
+    "replacementThreshold": -200
+  },
+  "history": [
+    {"date": "2026-02-13", "agent": "Cipher", "action": "mobile_fix", "exp": 50, "note": "Portrait responsiveness shipped"},
+    {"date": "2026-02-13", "agent": "Cipher", "action": "portrait_layout", "exp": 50, "note": "Vertical layout for iPhone 17"},
+    {"date": "2026-02-13", "agent": "Cipher", "action": "server_instability", "exp": -100, "note": "Multiple server crashes"}
+  ]
+}

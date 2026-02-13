@@ -128,13 +128,22 @@ const AGENTS = [
     name:'Flint', role:'Lead', color:'#FF8C00', podIndex:0,
     deskItems:['radio','clipboard'],
     companion:{ name:'Lucky', type:'boston_terrier' },
-    status:'working'
+    status:'working',
+    level:5, exp:600, nextLevel:1500, expProgress:0.4
   },
   {
     name:'Cipher', role:'Coder', color:'#00D4FF', podIndex:1,
     deskItems:['rubberDuck','energyDrink'],
     companion:null,
-    status:'working'
+    status:'working',
+    level:3, exp:320, nextLevel:800, expProgress:0.4
+  },
+  {
+    name:'Scout', role:'Recon', color:'#00CC66', podIndex:2,
+    deskItems:['radio'],
+    companion:null,
+    status:'working',
+    level:2, exp:150, nextLevel:400, expProgress:0.375
   }
 ];
 
@@ -149,6 +158,80 @@ function rect(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x|0, y|0, w|0,
 function strokeRect(c, x, y, w, h, col, lw) {
   c.strokeStyle = col; c.lineWidth = lw||1;
   c.strokeRect((x|0)+0.5, (y|0)+0.5, w|0, h|0);
+}
+
+function drawExpBar(ctx, x, y, width, height, progress, color, isMaxLevel) {
+  // Clamp progress to 0-1 range
+  progress = Math.max(0, Math.min(1, progress));
+
+  // Background
+  rect(ctx, x, y, width, height, '#1A1A20');
+
+  // Border
+  strokeRect(ctx, x, y, width, height, '#2A2A2A', 1);
+
+  // Fill based on progress
+  const fillWidth = (width - 2) * progress; // -2 for border padding
+  if (fillWidth > 0) {
+    // Use gold color for max level, otherwise use agent color
+    const fillColor = isMaxLevel ? '#FFAA00' : color;
+    rect(ctx, x + 1, y + 1, fillWidth, height - 2, fillColor);
+  }
+}
+
+function drawLevelBadge(ctx, x, y, level, color) {
+  // Format: "Lv.{level}"
+  const text = `Lv.${level}`;
+
+  // Font setup
+  ctx.font = '9px "JetBrains Mono"';
+  const textMetrics = ctx.measureText(text);
+  const textWidth = textMetrics.width;
+  const paddingX = 6;
+  const paddingY = 2;
+  const badgeWidth = textWidth + paddingX * 2;
+  const badgeHeight = 12;
+
+  // Create dark tint of agent color for background
+  // Parse hex color and darken it
+  const darkColor = darkenColor(color, 0.4);
+
+  // Draw pill background
+  ctx.fillStyle = darkColor;
+  ctx.beginPath();
+  const radius = badgeHeight / 2;
+  ctx.roundRect(x, y, badgeWidth, badgeHeight, radius);
+  ctx.fill();
+
+  // Draw text centered
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x + paddingX, y + badgeHeight / 2 + 0.5);
+
+  // Return badge width for positioning
+  return badgeWidth;
+}
+
+// Helper to darken a hex color
+function darkenColor(color, factor) {
+  // Handle hex colors
+  if (color.startsWith('#')) {
+    let hex = color.slice(1);
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+
+    const newR = Math.floor(r * factor);
+    const newG = Math.floor(g * factor);
+    const newB = Math.floor(b * factor);
+
+    return `rgb(${newR}, ${newG}, ${newB})`;
+  }
+  return color;
 }
 
 // ===== DRAW WOOD FLOOR =====
@@ -988,30 +1071,75 @@ function drawStatusBar() {
   let bx = 16;
   entities.forEach(ent => {
     const by = BAR_Y + 30;
+    const CARD_HEIGHT = 62; // Increased from 50px
+    const CARD_WIDTH = 160;
+
     // Badge background
-    rect(ctx, bx, by, 160, 50, '#0F1520');
-    strokeRect(ctx, bx, by, 160, 50, C.barBorder);
+    rect(ctx, bx, by, CARD_WIDTH, CARD_HEIGHT, '#0F1520');
+    strokeRect(ctx, bx, by, CARD_WIDTH, CARD_HEIGHT, C.barBorder);
+
     // Color dot
     rect(ctx, bx+8, by+8, 10, 10, ent.status === 'working' ? C.green : C.amber);
+
     // Name
     ctx.fillStyle = ent.color;
     ctx.font = 'bold 10px "JetBrains Mono"';
     ctx.fillText(ent.name, bx+24, by+17);
+
+    // Level badge (right-aligned on name row)
+    const badgeX = bx + CARD_WIDTH - 40; // Position near right edge
+    drawLevelBadge(ctx, badgeX, by+6, ent.level, ent.color);
+
     // Role
     ctx.fillStyle = C.barDim;
     ctx.font = '8px "JetBrains Mono"';
     ctx.fillText(ent.role, bx+24, by+30);
+
     // Status text
     ctx.fillStyle = ent.status === 'working' ? C.green : C.amber;
     ctx.font = '9px "JetBrains Mono"';
-    ctx.fillText(ent.status === 'working' ? '● WORKING' : '● IDLE', bx+8, by+44);
-    // State detail
-    ctx.fillStyle = C.barDim;
-    ctx.font = '7px "JetBrains Mono"';
-    const stateLabel = ent.state === 'working' ? 'at desk' :
-                       ent.state === 'wandering' ? 'exploring' :
-                       ent.state === 'walking_to_desk' ? 'returning' : 'standing by';
-    ctx.fillText(stateLabel, bx+90, by+44);
+    ctx.fillText(ent.status === 'working' ? '● WORKING' : '● IDLE', bx+24, by+44);
+
+    // EXP bar (new row below status)
+    const expBarX = bx + 24;
+    const expBarY = by + 52;
+    const expBarWidth = 80;
+    const expBarHeight = 5;
+    
+    // Determine max level status
+    const isMaxLevel = ent.nextLevel === null || ent.nextLevel === Infinity || ent.nextLevel === undefined;
+    
+    // Compute expProgress if missing
+    let expProgress = ent.expProgress;
+    if (expProgress === undefined || expProgress === null) {
+      if (ent.exp !== undefined && ent.nextLevel && !isMaxLevel) {
+        expProgress = ent.exp / ent.nextLevel;
+      } else if (isMaxLevel) {
+        expProgress = 1.0;
+      } else {
+        expProgress = undefined;
+      }
+    }
+    
+    // Only show EXP bar if we have valid progress data
+    if (expProgress !== undefined && !isNaN(expProgress)) {
+      drawExpBar(ctx, expBarX, expBarY, expBarWidth, expBarHeight, expProgress, ent.color, isMaxLevel);
+
+      // EXP fraction text
+      ctx.fillStyle = '#5A6A7A';
+      ctx.font = '7px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      
+      let expText;
+      if (isMaxLevel) {
+        // Max level: show just exp or "MAX"
+        expText = 'MAX';
+      } else {
+        expText = `${ent.exp || 0}/${ent.nextLevel}`;
+      }
+      ctx.fillText(expText, expBarX + expBarWidth + 6, expBarY + 4);
+    }
+
     bx += 170;
   });
 
