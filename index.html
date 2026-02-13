@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Operation Mind-Field — Secure Ops Center</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -11,8 +11,15 @@
     background: #05080D;
     display: flex; justify-content: center; align-items: center;
     height: 100vh; font-family: 'JetBrains Mono', monospace; overflow: hidden;
+    touch-action: none;
   }
-  canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+  canvas {
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+    height: auto;
+  }
 </style>
 </head>
 <body>
@@ -27,6 +34,24 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 canvas.width = 1100; canvas.height = 720;
 ctx.imageSmoothingEnabled = false;
+
+// Responsive scaling for mobile
+function updateCanvasScale() {
+  const targetWidth = 1100;
+  const targetHeight = 720;
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  
+  const scaleX = windowWidth / targetWidth;
+  const scaleY = windowHeight / targetHeight;
+  const scale = Math.min(scaleX, scaleY, 1); // Never upscale beyond 100%
+  
+  canvas.style.width = Math.floor(targetWidth * scale) + 'px';
+  canvas.style.height = Math.floor(targetHeight * scale) + 'px';
+}
+
+updateCanvasScale();
+window.addEventListener('resize', updateCanvasScale);
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
@@ -43,6 +68,10 @@ const C = {
   fHair:'#2A1808', fSkin:'#D4A574', fSkinS:'#C09060', fEye:'#1A1A2E',
   fJacket:'#2A3A5C', fJacketD:'#1E2E4A', fAccent:'#FF8C00',
   fPants:'#2A2A38', fBoots:'#1A1A20', fBelt:'#3A3A2A',
+  // Cipher (cyan)
+  cHair:'#1A1A2A', cSkin:'#D4A574', cSkinS:'#C09060', cEye:'#1A1A2E',
+  cJacket:'#1E3A4A', cJacketD:'#152A3A', cAccent:'#00D4FF',
+  cPants:'#2A2A38', cBoots:'#1A1A20', cBelt:'#2A3A4A',
   // Lucky
   lW:'#F0E8D8', lB:'#2A2018', lBr:'#8B6F4E', lNose:'#1A1410', lTongue:'#E87070',
   // Furniture
@@ -99,6 +128,12 @@ const AGENTS = [
     name:'Flint', role:'Lead', color:'#FF8C00', podIndex:0,
     deskItems:['radio','clipboard'],
     companion:{ name:'Lucky', type:'boston_terrier' },
+    status:'working'
+  },
+  {
+    name:'Cipher', role:'Coder', color:'#00D4FF', podIndex:1,
+    deskItems:['rubberDuck','energyDrink'],
+    companion:null,
     status:'working'
   }
 ];
@@ -208,6 +243,31 @@ function drawClipboard(c, x, y) {
   for (let i = 0; i < 4; i++) {
     rect(c, x+2, y+4+i*3, 8, 1, C.clipText);
   }
+}
+
+function drawRubberDuck(c, x, y) {
+  // Duck body (yellow)
+  rect(c, x+2, y+6, 10, 6, '#FFD700');
+  rect(c, x+4, y+4, 6, 2, '#FFD700');
+  // Head
+  rect(c, x+8, y+2, 6, 5, '#FFD700');
+  // Beak (orange)
+  rect(c, x+13, y+3, 3, 2, '#FF8C00');
+  // Eye
+  rect(c, x+10, y+3, 1, 1, '#1A1A2E');
+  // Wing
+  rect(c, x+4, y+8, 4, 3, '#FFC800');
+}
+
+function drawEnergyDrink(c, x, y) {
+  // Can body (silver with cyan accent)
+  rect(c, x+2, y+2, 8, 14, '#C0C0C0');
+  rect(c, x+2, y+4, 8, 10, '#00D4FF');
+  // Rim
+  rect(c, x+2, y, 8, 2, '#A0A0A0');
+  // Lightning bolt
+  rect(c, x+4, y+6, 2, 4, '#FFFFFF');
+  rect(c, x+5, y+7, 2, 3, '#FFFFFF');
 }
 
 function drawWorkbench(c, x, y) {
@@ -382,6 +442,8 @@ function drawPod(c, pod, agent) {
     if (agent.deskItems) {
       if (agent.deskItems.includes('radio')) drawRadio(c, x+24, y+10);
       if (agent.deskItems.includes('clipboard')) drawClipboard(c, x+w-42, y+8);
+      if (agent.deskItems.includes('rubberDuck')) drawRubberDuck(c, x+28, y+8);
+      if (agent.deskItems.includes('energyDrink')) drawEnergyDrink(c, x+w-38, y+6);
     }
   }
   // Pod number (dim)
@@ -620,6 +682,81 @@ const FLINT_SIT = [
   '.jJBBJj.',
 ];
 
+// ===== CIPHER SPRITES =====
+const CIPHER_PAL = {
+  H: C.cHair, S: C.cSkin, s: C.cSkinS, E: C.cEye,
+  J: C.cJacket, j: C.cJacketD, O: C.cAccent,
+  B: C.cBelt, P: C.cPants, b: C.cBoots,
+};
+const CIPHER_STAND = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+  '..PPPP..',
+  '..PPPP..',
+  '..PP.PP.',
+  '..bb.bb.',
+];
+const CIPHER_WALK1 = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+  '..PPPP..',
+  '..PP.PP.',
+  '.PP...PP',
+  '.bb...bb',
+];
+const CIPHER_WALK2 = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+  '..PPPP..',
+  '.PP..PP.',
+  'PP....PP',
+  'bb....bb',
+];
+const CIPHER_SIT = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+];
+
 // ===== LUCKY SPRITES =====
 const LUCKY_PAL = {
   W:C.lW, B:C.lB, n:C.lNose, t:C.lTongue,
@@ -677,6 +814,12 @@ class AgentEntity {
     this.stateTimer = 0;
     this.facing = 1; // 1=right, -1=left
     this.speed = 55;
+  }
+  getSprites() {
+    if (this.name === 'Cipher') {
+      return { pal: CIPHER_PAL, stand: CIPHER_STAND, walk1: CIPHER_WALK1, walk2: CIPHER_WALK2, sit: CIPHER_SIT };
+    }
+    return { pal: FLINT_PAL, stand: FLINT_STAND, walk1: FLINT_WALK1, walk2: FLINT_WALK2, sit: FLINT_SIT };
   }
   update(dt) {
     this.frameTimer += dt;
@@ -744,13 +887,14 @@ class AgentEntity {
   }
   draw(ctx) {
     const s = 3;
+    const sprites = this.getSprites();
     if (this.state === 'working') {
-      drawSprite(ctx, FLINT_SIT, FLINT_PAL, this.x|0, this.y|0, s);
+      drawSprite(ctx, sprites.sit, sprites.pal, this.x|0, this.y|0, s);
     } else if (this.state === 'idle') {
-      drawSprite(ctx, FLINT_STAND, FLINT_PAL, this.x|0, this.y|0, s);
+      drawSprite(ctx, sprites.stand, sprites.pal, this.x|0, this.y|0, s);
     } else {
-      const spr = this.frame === 0 ? FLINT_WALK1 : FLINT_WALK2;
-      drawSprite(ctx, spr, FLINT_PAL, this.x|0, this.y|0, s);
+      const spr = this.frame === 0 ? sprites.walk1 : sprites.walk2;
+      drawSprite(ctx, spr, sprites.pal, this.x|0, this.y|0, s);
     }
     // Name tag above head
     ctx.fillStyle = this.color;
