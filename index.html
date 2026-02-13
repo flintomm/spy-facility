@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Operation Mind-Field — Secure Ops Center</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #05080D;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; font-family: 'JetBrains Mono', monospace; overflow: hidden;
+  }
+  canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script>
+// ============================================================
+//  OPERATION MIND-FIELD — SECURE OPS CENTER
+//  Retro pixel-art spy facility for AI agent visualization
+// ============================================================
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = 1100; canvas.height = 720;
+ctx.imageSmoothingEnabled = false;
+
+// ===== PALETTE =====
+const C = {
+  bg:'#0D1117',
+  floor1:'#7A5C28', floor2:'#8B6914', floor3:'#6B4F1A', floorLine:'#5A4210', floorDark:'#4A3808',
+  wall:'#1A2030', wallTop:'#222E3E', wallTrim:'#2E3A4E', wallInner:'#151D2A', wallAccent:'#3A4A5E',
+  desk:'#4A3728', deskTop:'#5C4A38', deskLeg:'#3A2A1C',
+  monitor:'#0A1020', monScreen:'#003060', monGlow:'#0055AA', monBright:'#0088DD',
+  chair:'#2A2A35', chairSeat:'#35354A',
+  green:'#00CC66', red:'#CC3333', amber:'#FFAA00',
+  // Flint
+  fHair:'#2A1808', fSkin:'#D4A574', fSkinS:'#C09060', fEye:'#1A1A2E',
+  fJacket:'#2A3A5C', fJacketD:'#1E2E4A', fAccent:'#FF8C00',
+  fPants:'#2A2A38', fBoots:'#1A1A20', fBelt:'#3A3A2A',
+  // Lucky
+  lW:'#F0E8D8', lB:'#2A2018', lBr:'#8B6F4E', lNose:'#1A1410', lTongue:'#E87070',
+  // Furniture
+  couch:'#3A2A40', couchL:'#4A3A50', couchD:'#2A1A30',
+  shelf:'#3A3040', book1:'#8B2020', book2:'#204080', book3:'#206020', book4:'#806020',
+  fridge:'#B0B8C0', fridgeD:'#8090A0',
+  coffee:'#2A2A2A', coffeePot:'#604020',
+  cabinet:'#5C4A38', cabinetD:'#4A3828',
+  wb:'#E0E0D8', wbBorder:'#707070',
+  pingpong:'#206030', ppNet:'#D0D0D0', ppLeg:'#5A5A5A',
+  cooler:'#8098A8', coolerJug:'#A0C8D8',
+  bean1:'#7A2828', bean2:'#28487A',
+  plant:'#2E7D32', plantL:'#4CAF50', plantD:'#1B5E20', pot:'#795548', potD:'#5D4037',
+  radio:'#3A3A3A', radioAnt:'#808080', radioLight:'#CC3333',
+  clipboard:'#C8B890', clipMetal:'#A0A0A0', clipText:'#6A6040',
+  // UI
+  hdrBg:'#080C12', hdrText:'#00CC66', hdrDim:'#005530', hdrBorder:'#1A2A1A',
+  barBg:'#0A0E14', barBorder:'#1E2A3A', barText:'#C0C8D4', barDim:'#5A6A7A',
+  namePlate:'#1A1A20', namePlateText:'#C0C8D4',
+  tile:'#182028',
+};
+
+// ===== LAYOUT =====
+const HDR_H = 30;
+const ROOM_Y = 36, ROOM_H = 160;
+const POD_Y = 206, POD_W = 172, POD_H = 142, POD_GAP = 12;
+const POD_ROW2_Y = POD_Y + POD_H + 16;
+const LOUNGE_X = 770, LOUNGE_W = 320;
+const BAR_Y = 560, BAR_H = 152;
+
+const ROOMS = [
+  { name:'R&D LAB', x:10, y:ROOM_Y, w:246, h:ROOM_H, doorX:100, doorW:46 },
+  { name:'COMMAND', x:266, y:ROOM_Y, w:246, h:ROOM_H, doorX:356, doorW:46 },
+  { name:'GALLEY',  x:522, y:ROOM_Y, w:238, h:ROOM_H, doorX:608, doorW:46 },
+];
+
+function podPos(col, row) {
+  return {
+    x: 10 + col * (POD_W + POD_GAP),
+    y: (row === 0 ? POD_Y : POD_ROW2_Y),
+    w: POD_W, h: POD_H
+  };
+}
+
+const PODS = [];
+for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) PODS.push(podPos(c, r));
+
+// Desk center positions (where agents sit)
+function deskCenter(pod) { return { x: pod.x + pod.w/2, y: pod.y + 52 }; }
+
+// ===== AGENTS CONFIG =====
+const AGENTS = [
+  {
+    name:'Flint', role:'Lead', color:'#FF8C00', podIndex:0,
+    deskItems:['radio','clipboard'],
+    companion:{ name:'Lucky', type:'boston_terrier' },
+    status:'working'
+  }
+];
+
+// ===== OFFSCREEN BG =====
+const bgCanvas = document.createElement('canvas');
+bgCanvas.width = 1100; bgCanvas.height = 720;
+const bg = bgCanvas.getContext('2d');
+bg.imageSmoothingEnabled = false;
+
+// ===== DRAWING HELPERS =====
+function rect(c, x, y, w, h, col) { c.fillStyle = col; c.fillRect(x|0, y|0, w|0, h|0); }
+function strokeRect(c, x, y, w, h, col, lw) {
+  c.strokeStyle = col; c.lineWidth = lw||1;
+  c.strokeRect((x|0)+0.5, (y|0)+0.5, w|0, h|0);
+}
+
+// ===== DRAW WOOD FLOOR =====
+function drawFloor(c, x, y, w, h) {
+  const colors = [C.floor1, C.floor2, C.floor3, C.floor2, C.floor1, C.floor3];
+  const plankH = 10;
+  for (let py = y; py < y + h; py += plankH) {
+    const ci = ((py / plankH) | 0) % colors.length;
+    rect(c, x, py, w, Math.min(plankH, y+h-py), colors[ci]);
+    rect(c, x, py, w, 1, C.floorLine);
+    // Plank joints
+    const offset = ((py / plankH) | 0) % 2 === 0 ? 0 : 60;
+    for (let px = x + offset; px < x + w; px += 120) {
+      rect(c, px, py, 1, Math.min(plankH, y+h-py), C.floorLine);
+    }
+  }
+}
+
+// ===== DRAW WALLS =====
+function drawWalls(c, room) {
+  const { x, y, w, h, doorX, doorW } = room;
+  const t = 5; // wall thickness
+  // Floor first
+  drawFloor(c, x+t, y+t, w-t*2, h-t*2);
+  // Walls
+  rect(c, x, y, w, t, C.wallTop);       // top
+  rect(c, x, y, t, h, C.wall);          // left
+  rect(c, x+w-t, y, t, h, C.wall);      // right
+  // Bottom wall with door
+  rect(c, x, y+h-t, doorX - x, t, C.wallTop);
+  rect(c, doorX + doorW, y+h-t, (x+w) - (doorX+doorW), t, C.wallTop);
+  // Trim line
+  rect(c, x, y+t, w, 1, C.wallTrim);
+  // Room label
+  c.fillStyle = C.wallAccent;
+  c.font = '8px "JetBrains Mono"';
+  c.fillText(room.name, x + 10, y + 14);
+}
+
+// ===== FURNITURE DRAWING =====
+function drawDesk(c, x, y, w, h) {
+  rect(c, x, y, w, h, C.deskTop);
+  rect(c, x, y+h, w, 2, C.desk);
+  // Legs
+  rect(c, x+2, y+h, 3, 8, C.deskLeg);
+  rect(c, x+w-5, y+h, 3, 8, C.deskLeg);
+}
+
+function drawMonitor(c, x, y, on) {
+  rect(c, x, y, 30, 24, C.monitor);
+  rect(c, x+2, y+2, 26, 18, on ? C.monScreen : '#0A0A15');
+  if (on) {
+    // Scan lines
+    for (let i = 0; i < 18; i += 3) {
+      rect(c, x+2, y+2+i, 26, 1, C.monGlow);
+    }
+    // Text cursor blink
+    rect(c, x+6, y+12, 8, 2, C.monBright);
+  }
+  // Stand
+  rect(c, x+12, y+24, 6, 4, C.monitor);
+  rect(c, x+8, y+27, 14, 2, C.monitor);
+}
+
+function drawChair(c, x, y) {
+  rect(c, x, y, 18, 4, C.chairSeat);
+  rect(c, x+2, y-10, 14, 10, C.chair);
+  rect(c, x+1, y+4, 3, 6, C.chair);
+  rect(c, x+14, y+4, 3, 6, C.chair);
+}
+
+function drawNamePlate(c, x, y, name, status) {
+  rect(c, x, y, 60, 12, C.namePlate);
+  rect(c, x+2, y+2, 6, 8, status === 'working' ? C.green : C.red);
+  c.fillStyle = C.namePlateText;
+  c.font = '7px "JetBrains Mono"';
+  c.fillText(name, x + 12, y + 9);
+}
+
+function drawRadio(c, x, y) {
+  rect(c, x, y, 14, 10, C.radio);
+  rect(c, x+2, y+2, 10, 5, '#2A2A2A');
+  rect(c, x+5, y+1, 1, -8, C.radioAnt);
+  rect(c, x+5, y-8, 3, 2, C.radioAnt);
+  rect(c, x+10, y+3, 2, 2, C.radioLight);
+}
+
+function drawClipboard(c, x, y) {
+  rect(c, x, y, 12, 16, C.clipboard);
+  rect(c, x+3, y-2, 6, 3, C.clipMetal);
+  // Text lines
+  for (let i = 0; i < 4; i++) {
+    rect(c, x+2, y+4+i*3, 8, 1, C.clipText);
+  }
+}
+
+function drawWorkbench(c, x, y) {
+  drawDesk(c, x, y, 100, 20);
+  // Tools
+  rect(c, x+10, y+2, 16, 3, '#808080'); // wrench
+  rect(c, x+30, y+3, 12, 2, '#A0A0A0'); // screwdriver
+  rect(c, x+50, y+1, 8, 8, '#505060');  // multimeter
+  rect(c, x+52, y+3, 4, 4, '#003030');
+  rect(c, x+70, y+2, 6, 6, '#404050');  // component
+  rect(c, x+80, y+4, 14, 3, '#606070'); // pliers
+}
+
+function drawOscilloscope(c, x, y) {
+  rect(c, x, y, 30, 24, '#303040');
+  rect(c, x+3, y+3, 24, 14, '#001810');
+  // Wave
+  for (let i = 0; i < 20; i += 2) {
+    const wy = y + 10 + Math.sin(i * 0.8) * 4;
+    rect(c, x+5+i, wy|0, 2, 1, '#00FF80');
+  }
+  // Knobs
+  rect(c, x+6, y+19, 4, 4, '#505060');
+  rect(c, x+14, y+19, 4, 4, '#505060');
+  rect(c, x+22, y+19, 4, 4, '#505060');
+}
+
+function drawShelf(c, x, y, w) {
+  rect(c, x, y, w, 50, C.shelf);
+  // Books
+  const books = [C.book1,C.book2,C.book3,C.book4,C.book1,C.book2,C.book3];
+  let bx = x + 3;
+  for (const bc of books) {
+    const bw = 4 + Math.random()*4|0;
+    if (bx + bw > x + w - 3) break;
+    rect(c, bx, y+3, bw, 20, bc);
+    bx += bw + 2;
+  }
+  rect(c, x, y+25, w, 2, C.wallTrim);
+  // Lower shelf books
+  bx = x + 3;
+  for (let i = 0; i < 5; i++) {
+    const bw = 5 + Math.random()*3|0;
+    rect(c, bx, y+28, bw, 18, [C.book3,C.book4,C.book1,C.book2,C.book3][i]);
+    bx += bw + 2;
+  }
+}
+
+function drawCouch(c, x, y, w) {
+  rect(c, x, y+6, w, 18, C.couch);
+  rect(c, x+2, y+8, w-4, 12, C.couchL);
+  rect(c, x, y, 6, 24, C.couchD); // arm
+  rect(c, x+w-6, y, 6, 24, C.couchD); // arm
+  rect(c, x, y-4, w, 6, C.couch); // back
+  // Cushion lines
+  rect(c, x+w/3|0, y+8, 1, 12, C.couchD);
+  rect(c, x+(w*2/3)|0, y+8, 1, 12, C.couchD);
+}
+
+function drawFridge(c, x, y) {
+  rect(c, x, y, 24, 50, C.fridge);
+  rect(c, x, y, 24, 2, C.fridgeD);
+  rect(c, x, y+28, 24, 2, C.fridgeD);
+  rect(c, x+20, y+8, 2, 16, C.fridgeD);
+  rect(c, x+20, y+34, 2, 12, C.fridgeD);
+}
+
+function drawCoffeeMachine(c, x, y) {
+  rect(c, x, y, 16, 20, C.coffee);
+  rect(c, x+2, y+2, 12, 8, '#1A1A1A');
+  rect(c, x+4, y+12, 8, 6, C.coffeePot);
+  rect(c, x+12, y+4, 3, 3, C.red); // light
+}
+
+function drawCabinet(c, x, y, w) {
+  rect(c, x, y, w, 30, C.cabinet);
+  rect(c, x, y, w, 2, C.cabinetD);
+  // Doors
+  const dw = (w-6)/3;
+  for (let i = 0; i < 3; i++) {
+    const dx = x+3+i*(dw+1);
+    rect(c, dx, y+4, dw-1, 22, C.cabinetD);
+    rect(c, dx+dw/2-1|0, y+14, 2, 4, '#808080');
+  }
+}
+
+function drawWhiteboard(c, x, y) {
+  rect(c, x, y, 80, 50, C.wbBorder);
+  rect(c, x+3, y+3, 74, 44, C.wb);
+  // Scribbles
+  for (let i = 0; i < 5; i++) {
+    rect(c, x+8+i*12, y+10+i*6, 20, 1, '#4040A0');
+  }
+  rect(c, x+10, y+20, 30, 15, 'rgba(200,60,60,0.3)');
+  // Marker tray
+  rect(c, x+10, y+50, 60, 4, C.wbBorder);
+  rect(c, x+15, y+49, 6, 3, '#CC3333');
+  rect(c, x+24, y+49, 6, 3, '#3333CC');
+  rect(c, x+33, y+49, 6, 3, '#33CC33');
+}
+
+function drawPingPong(c, x, y) {
+  // Table
+  rect(c, x, y, 70, 36, C.pingpong);
+  rect(c, x, y, 70, 2, '#184828');
+  rect(c, x, y+34, 70, 2, '#184828');
+  rect(c, x, y, 2, 36, '#184828');
+  rect(c, x+68, y, 2, 36, '#184828');
+  // Center line
+  rect(c, x+34, y, 2, 36, C.ppNet);
+  // Legs
+  rect(c, x+5, y+36, 4, 10, C.ppLeg);
+  rect(c, x+61, y+36, 4, 10, C.ppLeg);
+}
+
+function drawWaterCooler(c, x, y) {
+  rect(c, x, y+14, 14, 26, C.cooler);
+  rect(c, x+1, y, 12, 16, C.coolerJug);
+  rect(c, x+4, y+2, 6, 10, '#C0E0F0');
+  rect(c, x+6, y+30, 2, 4, '#606060');
+  // Cup
+  rect(c, x+16, y+34, 5, 5, '#E0E0E0');
+}
+
+function drawBeanBag(c, x, y, col) {
+  // Oval-ish shape
+  rect(c, x+2, y, 16, 4, col);
+  rect(c, x, y+4, 20, 10, col);
+  rect(c, x+2, y+14, 16, 4, col);
+}
+
+function drawPlant(c, x, y, size) {
+  const s = size || 1;
+  // Pot
+  rect(c, x+2*s, y+10*s, 8*s, 8*s, C.pot);
+  rect(c, x+1*s, y+10*s, 10*s, 2*s, C.potD);
+  rect(c, x+3*s, y+18*s, 6*s, 2*s, C.potD);
+  // Leaves
+  rect(c, x+4*s, y+4*s, 4*s, 6*s, C.plant);
+  rect(c, x+1*s, y+2*s, 3*s, 5*s, C.plantL);
+  rect(c, x+8*s, y+3*s, 3*s, 4*s, C.plantL);
+  rect(c, x+5*s, y, 2*s, 4*s, C.plantD);
+}
+
+// ===== POD DRAWING =====
+function drawPod(c, pod, agent) {
+  const { x, y, w, h } = pod;
+  const t = 4;
+  // Floor
+  drawFloor(c, x+t, y+t, w-t*2, h-t*2);
+  // Walls
+  rect(c, x, y, w, t, C.wallTop);
+  rect(c, x, y, t, h, C.wall);
+  rect(c, x+w-t, y, t, h, C.wall);
+  // Bottom wall with door
+  const doorW = 40;
+  const doorX = x + (w-doorW)/2;
+  rect(c, x, y+h-t, doorX-x, t, C.wallTop);
+  rect(c, doorX+doorW, y+h-t, (x+w)-(doorX+doorW), t, C.wallTop);
+  // Desk
+  drawDesk(c, x+22, y+16, w-44, 18);
+  // Monitor
+  drawMonitor(c, x+(w/2)-15|0, y+8, agent && agent.status === 'working');
+  // Chair (when no agent sitting)
+  if (!agent || agent.state !== 'working') {
+    drawChair(c, x+(w/2)-9|0, y+58);
+  }
+  // Name plate
+  if (agent) {
+    drawNamePlate(c, x+56, y+6, agent.name, agent.status);
+    // Desk items
+    if (agent.deskItems) {
+      if (agent.deskItems.includes('radio')) drawRadio(c, x+24, y+10);
+      if (agent.deskItems.includes('clipboard')) drawClipboard(c, x+w-42, y+8);
+    }
+  }
+  // Pod number (dim)
+  c.fillStyle = C.barDim;
+  c.font = '7px "JetBrains Mono"';
+  c.fillText('P'+(PODS.indexOf(pod)), x+8, y+h-8);
+}
+
+// ===== RENDER ROOMS =====
+function renderRDLab(c) {
+  const r = ROOMS[0];
+  drawWalls(c, r);
+  drawWorkbench(c, r.x+20, r.y+30);
+  drawOscilloscope(c, r.x+140, r.y+24);
+  drawShelf(c, r.x+180, r.y+12, 50);
+  drawPlant(c, r.x+18, r.y+80, 1.5);
+  // Parts bins
+  rect(c, r.x+80, r.y+70, 40, 20, '#404050');
+  rect(c, r.x+82, r.y+72, 16, 16, '#303040');
+  rect(c, r.x+102, r.y+72, 16, 16, '#303040');
+}
+
+function renderCommand(c) {
+  const r = ROOMS[1];
+  drawWalls(c, r);
+  // Big desk
+  drawDesk(c, r.x+30, r.y+20, 100, 22);
+  drawMonitor(c, r.x+60, r.y+10, true);
+  drawChair(c, r.x+70, r.y+56);
+  // Couch
+  drawCouch(c, r.x+160, r.y+60, 70);
+  // Shelf
+  drawShelf(c, r.x+20, r.y+100, 80);
+  drawPlant(c, r.x+200, r.y+100, 1.2);
+}
+
+function renderGalley(c) {
+  const r = ROOMS[2];
+  drawWalls(c, r);
+  drawCabinet(c, r.x+15, r.y+14, 90);
+  drawFridge(c, r.x+140, r.y+16);
+  drawCoffeeMachine(c, r.x+180, r.y+30);
+  // Counter
+  rect(c, r.x+15, r.y+60, 140, 16, C.deskTop);
+  rect(c, r.x+15, r.y+76, 140, 3, C.desk);
+  // Stools
+  for (let i = 0; i < 3; i++) {
+    rect(c, r.x+30+i*40, r.y+90, 14, 4, C.chairSeat);
+    rect(c, r.x+35+i*40, r.y+94, 4, 10, C.chair);
+  }
+  drawPlant(c, r.x+190, r.y+90, 1);
+}
+
+function renderLounge(c) {
+  const x = LOUNGE_X, y = ROOM_Y, w = LOUNGE_W, h = 490;
+  // Floor
+  drawFloor(c, x+5, y+5, w-10, h-10);
+  // Walls
+  rect(c, x, y, w, 5, C.wallTop);
+  rect(c, x+w-5, y, 5, h, C.wall);
+  rect(c, x, y, 5, h, C.wall);
+  // Bottom wall with door
+  const doorW = 46;
+  const doorX = x + 20;
+  rect(c, x, y+h-5, doorX-x, 5, C.wallTop);
+  rect(c, doorX+doorW, y+h-5, (x+w)-(doorX+doorW), 5, C.wallTop);
+  // Labels
+  c.fillStyle = C.wallAccent;
+  c.font = '8px "JetBrains Mono"';
+  c.fillText('BRIEFING & REC', x+10, y+14);
+  // Whiteboard
+  drawWhiteboard(c, x+20, y+30);
+  // Coffee table
+  rect(c, x+30, y+110, 40, 24, C.desk);
+  rect(c, x+32, y+112, 36, 20, C.deskTop);
+  // Couch
+  drawCouch(c, x+20, y+150, 80);
+  // Water cooler
+  drawWaterCooler(c, x+140, y+40);
+  // Bean bags
+  drawBeanBag(c, x+180, y+120, C.bean1);
+  drawBeanBag(c, x+220, y+150, C.bean2);
+  // Ping pong table
+  drawPingPong(c, x+120, y+220);
+  // Plants
+  drawPlant(c, x+260, y+40, 1.5);
+  drawPlant(c, x+280, y+280, 1.2);
+  drawPlant(c, x+20, y+300, 1);
+  // Rec sign
+  c.fillStyle = C.hdrDim;
+  c.font = '7px "JetBrains Mono"';
+  c.fillText('🎯 REC ZONE', x+120, y+210);
+}
+
+// ===== CORRIDOR FLOOR =====
+function renderCorridors(c) {
+  // Horizontal corridor between pod rows
+  drawFloor(c, 10, POD_Y+POD_H, 750, 16);
+  // Vertical corridor (right side of pods to lounge)
+  drawFloor(c, 742, POD_Y, 28, POD_ROW2_Y+POD_H-POD_Y);
+  // Top corridor (below rooms, above pods)
+  drawFloor(c, 10, ROOM_Y+ROOM_H, 750, POD_Y-ROOM_Y-ROOM_H);
+  // Scattered floor tiles in open areas
+  drawFloor(c, 10, POD_ROW2_Y+POD_H, 750, BAR_Y-POD_ROW2_Y-POD_H);
+}
+
+// ===== STATIC BACKGROUND =====
+function renderBackground() {
+  // Base
+  rect(bg, 0, 0, 1100, 720, C.bg);
+  // Header
+  rect(bg, 0, 0, 1100, HDR_H, C.hdrBg);
+  rect(bg, 0, HDR_H-1, 1100, 1, C.hdrBorder);
+  bg.fillStyle = C.hdrText;
+  bg.font = 'bold 11px "JetBrains Mono"';
+  bg.fillText('◆ OPERATION MIND-FIELD', 16, 19);
+  bg.fillStyle = C.hdrDim;
+  bg.font = '10px "JetBrains Mono"';
+  bg.fillText('SECURE OPS CENTER', 230, 19);
+  // Blinking dots placeholder area
+  bg.fillStyle = C.hdrDim;
+  bg.fillText('◆ CLASSIFIED ◆', 920, 19);
+
+  // Corridors first (under everything)
+  renderCorridors(bg);
+
+  // Rooms
+  renderRDLab(bg);
+  renderCommand(bg);
+  renderGalley(bg);
+  renderLounge(bg);
+
+  // Pods
+  PODS.forEach((pod, i) => {
+    const agent = AGENTS.find(a => a.podIndex === i);
+    drawPod(bg, pod, agent);
+  });
+
+  // Scattered plants in corridors
+  drawPlant(bg, 30, POD_Y+POD_H+1, 0.8);
+  drawPlant(bg, 400, ROOM_Y+ROOM_H+2, 1);
+  drawPlant(bg, 700, POD_ROW2_Y+POD_H+10, 1.2);
+
+  // Bottom bar background
+  rect(bg, 0, BAR_Y, 1100, BAR_H, C.barBg);
+  rect(bg, 0, BAR_Y, 1100, 1, C.barBorder);
+  rect(bg, 0, BAR_Y+1, 1100, 1, C.barBorder);
+}
+
+// ===== SPRITE SYSTEM =====
+function drawSprite(ctx, data, pal, x, y, s) {
+  for (let r = 0; r < data.length; r++) {
+    const row = data[r];
+    for (let c = 0; c < row.length; c++) {
+      const ch = row[c];
+      if (ch !== '.' && pal[ch]) {
+        ctx.fillStyle = pal[ch];
+        ctx.fillRect((x + c*s)|0, (y + r*s)|0, s, s);
+      }
+    }
+  }
+}
+
+// ===== FLINT SPRITES =====
+const FLINT_PAL = {
+  H:C.fHair, S:C.fSkin, s:C.fSkinS, E:C.fEye,
+  J:C.fJacket, j:C.fJacketD, O:C.fAccent,
+  B:C.fBelt, P:C.fPants, b:C.fBoots,
+};
+const FLINT_STAND = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+  '..PPPP..',
+  '..PPPP..',
+  '..PP.PP.',
+  '..bb.bb.',
+];
+const FLINT_WALK1 = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+  '..PPPP..',
+  '..PP.PP.',
+  '.PP...PP',
+  '.bb...bb',
+];
+const FLINT_WALK2 = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+  '..PPPP..',
+  '.PP..PP.',
+  'PP....PP',
+  'bb....bb',
+];
+const FLINT_SIT = [
+  '..HHHH..',
+  '.HHHHHH.',
+  '.HSSSSH.',
+  '.SEESSE.',
+  '.SSssSS.',
+  '..SssS..',
+  '..SSSS..',
+  '.jJJJJj.',
+  '.JJJJJJ.',
+  '.JOOJOJ.',
+  '.JJJJJJ.',
+  '.jJBBJj.',
+];
+
+// ===== LUCKY SPRITES =====
+const LUCKY_PAL = {
+  W:C.lW, B:C.lB, n:C.lNose, t:C.lTongue,
+};
+const LUCKY_IDLE1 = [
+  '.WW.WW.',
+  'WWWWWWW',
+  'WBWnWBW',
+  '.WWWWW.',
+  '.WWWWW.',
+  '.WW.WW.',
+  '..W....',
+];
+const LUCKY_IDLE2 = [
+  '.WW.WW.',
+  'WWWWWWW',
+  'WBWnWBW',
+  '.WWtWW.',
+  '.WWWWW.',
+  '.WW.WW.',
+  '....W..',
+];
+const LUCKY_WALK1 = [
+  '.WW.WW.',
+  'WWWWWWW',
+  'WBWnWBW',
+  '.WWWWW.',
+  '.WWWWW.',
+  '.W...W.',
+  'W.....W',
+];
+const LUCKY_WALK2 = [
+  '.WW.WW.',
+  'WWWWWWW',
+  'WBWnWBW',
+  '.WWWWW.',
+  '.WWWWW.',
+  'W.....W',
+  '.W...W.',
+];
+
+// ===== AGENT CLASS =====
+class AgentEntity {
+  constructor(cfg) {
+    Object.assign(this, cfg);
+    this.pod = PODS[cfg.podIndex];
+    const dc = deskCenter(this.pod);
+    this.deskPos = { x: dc.x - 12, y: dc.y - 20 };
+    this.x = dc.x - 12;
+    this.y = dc.y + 20;
+    this.state = 'walking_to_desk';
+    this.target = { ...this.deskPos };
+    this.frame = 0;
+    this.frameTimer = 0;
+    this.stateTimer = 0;
+    this.facing = 1; // 1=right, -1=left
+    this.speed = 55;
+  }
+  update(dt) {
+    this.frameTimer += dt;
+    if (this.frameTimer > 0.25) { this.frame = (this.frame+1)%2; this.frameTimer = 0; }
+    this.stateTimer -= dt * 1000;
+
+    switch (this.state) {
+      case 'walking_to_desk':
+      case 'wandering':
+        this.moveToTarget(dt);
+        break;
+      case 'working':
+        if (this.status !== 'working' && this.stateTimer <= 0) {
+          this.startWander();
+        }
+        break;
+      case 'idle':
+        if (this.status === 'working') {
+          this.state = 'walking_to_desk';
+          this.target = { ...this.deskPos };
+        } else if (this.stateTimer <= 0) {
+          if (Math.random() < 0.6) this.startWander();
+          else { this.state = 'walking_to_desk'; this.target = { ...this.deskPos }; }
+        }
+        break;
+    }
+  }
+  moveToTarget(dt) {
+    const dx = this.target.x - this.x;
+    const dy = this.target.y - this.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 3) {
+      this.x = this.target.x; this.y = this.target.y;
+      if (this.state === 'walking_to_desk') {
+        this.state = 'working';
+        this.stateTimer = 8000 + Math.random() * 12000;
+      } else {
+        this.state = 'idle';
+        this.stateTimer = 2000 + Math.random() * 4000;
+      }
+      return;
+    }
+    const mx = (dx/dist) * this.speed * dt;
+    const my = (dy/dist) * this.speed * dt;
+    this.x += mx; this.y += my;
+    if (Math.abs(dx) > 2) this.facing = dx > 0 ? 1 : -1;
+  }
+  startWander() {
+    this.state = 'wandering';
+    const spots = [
+      // Rooms
+      { x: ROOMS[0].x+80, y: ROOMS[0].y+80 },
+      { x: ROOMS[1].x+120, y: ROOMS[1].y+80 },
+      { x: ROOMS[2].x+100, y: ROOMS[2].y+80 },
+      // Lounge
+      { x: LOUNGE_X+60, y: ROOM_Y+180 },
+      { x: LOUNGE_X+160, y: ROOM_Y+260 },
+      { x: LOUNGE_X+100, y: ROOM_Y+100 },
+      // Corridors
+      { x: 200, y: POD_Y+POD_H+6 },
+      { x: 500, y: POD_Y+POD_H+6 },
+      { x: 400, y: ROOM_Y+ROOM_H+8 },
+    ];
+    this.target = spots[Math.random()*spots.length|0];
+  }
+  draw(ctx) {
+    const s = 3;
+    if (this.state === 'working') {
+      drawSprite(ctx, FLINT_SIT, FLINT_PAL, this.x|0, this.y|0, s);
+    } else if (this.state === 'idle') {
+      drawSprite(ctx, FLINT_STAND, FLINT_PAL, this.x|0, this.y|0, s);
+    } else {
+      const spr = this.frame === 0 ? FLINT_WALK1 : FLINT_WALK2;
+      drawSprite(ctx, spr, FLINT_PAL, this.x|0, this.y|0, s);
+    }
+    // Name tag above head
+    ctx.fillStyle = this.color;
+    ctx.font = 'bold 8px "JetBrains Mono"';
+    ctx.fillText(this.name, (this.x - 2)|0, (this.y - 4)|0);
+  }
+}
+
+// ===== COMPANION CLASS =====
+class CompanionEntity {
+  constructor(cfg, owner) {
+    this.name = cfg.name;
+    this.owner = owner;
+    this.x = owner.x + 30;
+    this.y = owner.y + 20;
+    this.target = { x: this.x, y: this.y };
+    this.frame = 0;
+    this.frameTimer = 0;
+    this.state = 'following'; // following | sitting | wandering
+    this.speed = 45;
+    this.stateTimer = 0;
+  }
+  update(dt) {
+    this.frameTimer += dt;
+    if (this.frameTimer > 0.35) { this.frame = (this.frame+1)%2; this.frameTimer = 0; }
+    this.stateTimer -= dt * 1000;
+
+    if (this.owner.state === 'working') {
+      // Sit near desk
+      this.target = { x: this.owner.x + 28, y: this.owner.y + 30 };
+      const dx = this.target.x - this.x, dy = this.target.y - this.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist > 4) {
+        this.x += (dx/dist)*this.speed*dt;
+        this.y += (dy/dist)*this.speed*dt;
+        this.state = 'following';
+      } else {
+        this.state = 'sitting';
+      }
+    } else if (this.owner.state === 'idle' || this.owner.state === 'wandering' || this.owner.state === 'walking_to_desk') {
+      // Follow owner with slight delay
+      this.target = { x: this.owner.x + 25, y: this.owner.y + 15 };
+      const dx = this.target.x - this.x, dy = this.target.y - this.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if (dist > 20) {
+        this.x += (dx/dist)*this.speed*dt;
+        this.y += (dy/dist)*this.speed*dt;
+        this.state = 'following';
+      } else {
+        this.state = 'sitting';
+      }
+    }
+  }
+  draw(ctx) {
+    const s = 2;
+    let spr;
+    if (this.state === 'sitting') {
+      spr = this.frame === 0 ? LUCKY_IDLE1 : LUCKY_IDLE2;
+    } else {
+      spr = this.frame === 0 ? LUCKY_WALK1 : LUCKY_WALK2;
+    }
+    drawSprite(ctx, spr, LUCKY_PAL, this.x|0, this.y|0, s);
+    // Name
+    ctx.fillStyle = '#8090A0';
+    ctx.font = '6px "JetBrains Mono"';
+    ctx.fillText(this.name, (this.x-2)|0, (this.y-2)|0);
+  }
+}
+
+// ===== STATUS BAR =====
+function drawStatusBar() {
+  // Header classified blink
+  const blink = (Date.now() / 800 | 0) % 2;
+  rect(ctx, 900, 6, 190, 18, C.hdrBg);
+  ctx.fillStyle = blink ? C.hdrText : C.hdrDim;
+  ctx.font = '10px "JetBrains Mono"';
+  ctx.fillText('◆ CLASSIFIED ◆', 920, 19);
+
+  // Status bar
+  ctx.fillStyle = C.barDim;
+  ctx.font = '9px "JetBrains Mono"';
+  ctx.fillText('AGENT STATUS', 16, BAR_Y + 18);
+
+  // Time
+  const now = new Date();
+  const ts = now.toLocaleTimeString('en-US', { hour12:false });
+  ctx.fillStyle = C.hdrText;
+  ctx.fillText(ts, 1020, BAR_Y + 18);
+
+  // Agent badges
+  let bx = 16;
+  entities.forEach(ent => {
+    const by = BAR_Y + 30;
+    // Badge background
+    rect(ctx, bx, by, 160, 50, '#0F1520');
+    strokeRect(ctx, bx, by, 160, 50, C.barBorder);
+    // Color dot
+    rect(ctx, bx+8, by+8, 10, 10, ent.status === 'working' ? C.green : C.amber);
+    // Name
+    ctx.fillStyle = ent.color;
+    ctx.font = 'bold 10px "JetBrains Mono"';
+    ctx.fillText(ent.name, bx+24, by+17);
+    // Role
+    ctx.fillStyle = C.barDim;
+    ctx.font = '8px "JetBrains Mono"';
+    ctx.fillText(ent.role, bx+24, by+30);
+    // Status text
+    ctx.fillStyle = ent.status === 'working' ? C.green : C.amber;
+    ctx.font = '9px "JetBrains Mono"';
+    ctx.fillText(ent.status === 'working' ? '● WORKING' : '● IDLE', bx+8, by+44);
+    // State detail
+    ctx.fillStyle = C.barDim;
+    ctx.font = '7px "JetBrains Mono"';
+    const stateLabel = ent.state === 'working' ? 'at desk' :
+                       ent.state === 'wandering' ? 'exploring' :
+                       ent.state === 'walking_to_desk' ? 'returning' : 'standing by';
+    ctx.fillText(stateLabel, bx+90, by+44);
+    bx += 170;
+  });
+
+  // Companion badges
+  companions.forEach(comp => {
+    const by = BAR_Y + 30;
+    rect(ctx, bx, by, 120, 50, '#0F1520');
+    strokeRect(ctx, bx, by, 120, 50, C.barBorder);
+    rect(ctx, bx+8, by+8, 8, 8, '#8B6F4E');
+    ctx.fillStyle = '#D4A574';
+    ctx.font = 'bold 9px "JetBrains Mono"';
+    ctx.fillText(comp.name, bx+22, by+17);
+    ctx.fillStyle = C.barDim;
+    ctx.font = '8px "JetBrains Mono"';
+    ctx.fillText('Companion', bx+22, by+30);
+    ctx.fillStyle = '#8B6F4E';
+    ctx.font = '8px "JetBrains Mono"';
+    ctx.fillText(comp.state === 'sitting' ? '🐕 resting' : '🐕 following', bx+8, by+44);
+    bx += 130;
+  });
+
+  // System info
+  ctx.fillStyle = C.barDim;
+  ctx.font = '7px "JetBrains Mono"';
+  ctx.fillText('POLL: /api/employee-status @ 5s', 16, BAR_Y + 100);
+  ctx.fillText('AGENTS: ' + entities.length + ' active', 16, BAR_Y + 114);
+  ctx.fillText('FACILITY: OPERATIONAL', 16, BAR_Y + 128);
+
+  // Mini-map or info on right side
+  ctx.fillStyle = C.barDim;
+  ctx.fillText('ROOMS: R&D Lab · Command · Galley · Lounge', 500, BAR_Y + 100);
+  ctx.fillText('PODS: 8 stations (4×2)', 500, BAR_Y + 114);
+  ctx.fillText('SEC LEVEL: ████████░░ HIGH', 500, BAR_Y + 128);
+}
+
+// ===== POLLING =====
+let pollTimer = 0;
+async function pollStatus() {
+  try {
+    const res = await fetch('/api/employee-status');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        data.forEach(s => {
+          const ent = entities.find(e => e.name.toLowerCase() === s.name?.toLowerCase());
+          if (ent) ent.status = s.status || 'idle';
+        });
+      }
+    }
+  } catch(e) {
+    // API not available — that's fine, use default state
+  }
+}
+
+// ===== INITIALIZATION =====
+const entities = AGENTS.map(a => new AgentEntity(a));
+const companions = [];
+entities.forEach(ent => {
+  if (ent.companion) {
+    companions.push(new CompanionEntity(ent.companion, ent));
+  }
+});
+
+renderBackground();
+
+// ===== GAME LOOP =====
+let lastTime = 0;
+function gameLoop(timestamp) {
+  const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+  lastTime = timestamp;
+
+  // Update
+  entities.forEach(e => e.update(dt));
+  companions.forEach(c => c.update(dt));
+
+  // Poll timer
+  pollTimer += dt * 1000;
+  if (pollTimer >= POLL_INTERVAL) { pollStatus(); pollTimer = 0; }
+
+  // Draw
+  ctx.drawImage(bgCanvas, 0, 0);
+  entities.forEach(e => e.draw(ctx));
+  companions.forEach(c => c.draw(ctx));
+  drawStatusBar();
+
+  requestAnimationFrame(gameLoop);
+}
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
