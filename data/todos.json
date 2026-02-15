@@ -1,14 +1,5 @@
 [
   {
-    "id": 1771184222196,
-    "text": "Onboard Scout (Researcher)",
-    "done": true,
-    "createdAt": "2026-02-15T19:37:02.196Z",
-    "createdBy": "Flint",
-    "assignedTo": "Cipher",
-    "completedAt": "2026-02-15T19:35:00Z"
-  },
-  {
     "id": 1771190391232,
     "text": "Study pixel art fundamentals — read https://gamemaker.io/en/blog/make-pixel-art-2d-games and https://www.pixilart.com/. Create notes on: 1) Color theory for limited palettes, 2) Sprite sizing and scaling, 3) Animation basics for 2D games, 4) Best tools/workflows. Report: \"Vera checking in — [key learnings about pixel art]\"",
     "done": false,
@@ -25,23 +16,5 @@
     "createdBy": "Flint",
     "assignedTo": "Vera",
     "completedAt": null
-  },
-  {
-    "id": 1771191828469,
-    "text": "[TEST] Scout — 20 second status test. Count 1-20 slowly.",
-    "done": true,
-    "createdAt": "2026-02-15T21:43:48.469Z",
-    "createdBy": "Flint",
-    "assignedTo": "Scout",
-    "completedAt": "2026-02-15T22:02:00Z"
-  },
-  {
-    "id": 1771192038644,
-    "text": "[TEST] Scout — 30 second research on canvas pixel art",
-    "done": true,
-    "createdAt": "2026-02-15T21:47:18.644Z",
-    "createdBy": "Flint",
-    "assignedTo": "Scout",
-    "completedAt": "2026-02-15T22:02:00Z"
   }
 ]

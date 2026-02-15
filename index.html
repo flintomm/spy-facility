@@ -2862,6 +2862,18 @@ function drawExpandedCard(ctx, ent, x, y, cardWidth = 160, cardHeight = 90) {
   ctx.font = '9px "JetBrains Mono"';
   ctx.fillText(statusText, x + 8, y + 52);
 
+  // Task/Model subtitle (only when working)
+  if (ent.status === 'working' && ent.currentTask) {
+    ctx.fillStyle = C.barDim;
+    ctx.font = '7px "JetBrains Mono"';
+    const taskText = ent.currentTask.length > 30 ? ent.currentTask.substring(0, 30) + '...' : ent.currentTask;
+    ctx.fillText(taskText, x + 8, y + 64);
+    
+    if (ent.currentModel) {
+      ctx.fillText(`[${ent.currentModel}]`, x + 8, y + 74);
+    }
+  }
+
   // EXP bar
   const expBarX = x + 8;
   const expBarY = y + 62;

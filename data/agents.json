@@ -4,13 +4,18 @@
       "name": "Flint",
       "tier": 1,
       "level": 2,
-      "exp": 575,
+      "exp": 725,
       "nextLevel": 750,
       "rank": "Director",
       "color": "#FF8C00",
       "model": "claude-opus-4-5",
-      "deskItems": ["radio", "clipboard"],
-      "quartersItems": ["bed"],
+      "deskItems": [
+        "radio",
+        "clipboard"
+      ],
+      "quartersItems": [
+        "bed"
+      ],
       "companion": "Lucky"
     },
     "Cipher": {
@@ -22,8 +27,13 @@
       "rank": "Systems",
       "color": "#00D4FF",
       "model": "MiniMax-M2.5",
-      "deskItems": ["rubberDuck", "energyDrink"],
-      "quartersItems": ["bed"],
+      "deskItems": [
+        "rubberDuck",
+        "energyDrink"
+      ],
+      "quartersItems": [
+        "bed"
+      ],
       "companion": null
     },
     "Scrub": {
@@ -35,8 +45,13 @@
       "rank": "Security",
       "color": "#8B0000",
       "model": "MiniMax-M2.5",
-      "deskItems": ["shredder", "blacklight"],
-      "quartersItems": ["bed"],
+      "deskItems": [
+        "shredder",
+        "blacklight"
+      ],
+      "quartersItems": [
+        "bed"
+      ],
       "companion": null
     },
     "Scout": {
@@ -48,8 +63,13 @@
       "rank": "Researcher",
       "color": "#9B59B6",
       "model": "kimi-k2p5",
-      "deskItems": ["notebook", "coffee"],
-      "quartersItems": ["bed"],
+      "deskItems": [
+        "notebook",
+        "coffee"
+      ],
+      "quartersItems": [
+        "bed"
+      ],
       "companion": null
     },
     "Vera": {
@@ -61,8 +81,13 @@
       "rank": "Designer",
       "color": "#D4A574",
       "model": "MiniMax-M2.5",
-      "deskItems": ["succulent", "sketchbook"],
-      "quartersItems": ["bed"],
+      "deskItems": [
+        "succulent",
+        "sketchbook"
+      ],
+      "quartersItems": [
+        "bed"
+      ],
       "companion": null
     }
   },
@@ -112,17 +137,32 @@
     "claude-opus-4-5": {
       "tasks": 1,
       "totalExp": 25,
-      "agents": {"Flint": {"tasks": 1, "totalExp": 25}}
+      "agents": {
+        "Flint": {
+          "tasks": 1,
+          "totalExp": 25
+        }
+      }
     },
     "MiniMax-M2.5": {
       "tasks": 3,
       "totalExp": 150,
-      "agents": {"Cipher": {"tasks": 3, "totalExp": 150}}
+      "agents": {
+        "Cipher": {
+          "tasks": 3,
+          "totalExp": 150
+        }
+      }
     },
     "kimi-k2p5": {
       "tasks": 0,
       "totalExp": 0,
-      "agents": {"Scout": {"tasks": 0, "totalExp": 0}}
+      "agents": {
+        "Scout": {
+          "tasks": 0,
+          "totalExp": 0
+        }
+      }
     }
   }
 }

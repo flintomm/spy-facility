@@ -462,5 +462,26 @@
     "task": "[TEST] Scout — 30 second research on canvas pixel art",
     "exp": 0,
     "model": null
+  },
+  {
+    "time": "2026-02-15T22:49:15.179Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Scout — 20 second status test. Count 1-20 slowly.",
+    "exp": 50
+  },
+  {
+    "time": "2026-02-15T22:49:17.875Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Scout — 30 second research on canvas pixel art",
+    "exp": 50
+  },
+  {
+    "time": "2026-02-15T22:49:20.538Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "Onboard Scout (Researcher)",
+    "exp": 50
   }
 ]

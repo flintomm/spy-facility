@@ -227,6 +227,71 @@ const AGENT_DIR_TO_NAME = {
 };
 
 /**
+ * Get the latest session info for an agent (task and model)
+ */
+function getAgentSessionInfo(agentId) {
+  const sessDir = AGENT_SESSION_DIRS[agentId];
+  if (!sessDir || !fs.existsSync(sessDir)) return { task: null, model: null };
+  
+  try {
+    const files = fs.readdirSync(sessDir).filter(f => f.endsWith('.jsonl'));
+    if (files.length === 0) return { task: null, model: null };
+    
+    // Find the most recently modified JSONL file
+    let latestFile = null;
+    let latestTime = 0;
+    
+    for (const file of files) {
+      const fullPath = path.join(sessDir, file);
+      const stat = fs.statSync(fullPath);
+      if (stat.mtimeMs > latestTime) {
+        latestTime = stat.mtimeMs;
+        latestFile = fullPath;
+      }
+    }
+    
+    if (!latestFile) return { task: null, model: null };
+    
+    // Read the file and find the last user message
+    const content = fs.readFileSync(latestFile, 'utf8');
+    const lines = content.trim().split('\n').filter(l => l.trim());
+    
+    let task = null;
+    let model = null;
+    
+    // Parse from the end to find the most recent user message
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        const entry = JSON.parse(lines[i]);
+        
+        // Get model from assistant message
+        if (entry.message?.role === 'assistant' && entry.message?.model) {
+          model = entry.message.model;
+        }
+        
+        // Get task from user message
+        if (entry.message?.role === 'user' && entry.message?.content) {
+          const content = entry.message.content;
+          if (typeof content === 'string') {
+            task = content.substring(0, 80) + (content.length > 80 ? '...' : '');
+          } else if (Array.isArray(content) && content[0]?.text) {
+            const text = content[0].text;
+            task = text.substring(0, 80) + (text.length > 80 ? '...' : '');
+          }
+          break; // Found the last user message
+        }
+      } catch (e) {
+        // Skip invalid lines
+      }
+    }
+    
+    return { task, model };
+  } catch (err) {
+    return { task: null, model: null };
+  }
+}
+
+/**
  * Get the most recent JSONL activity timestamp from an agent's session directory
  */
 function getAgentLastActivity(agentId) {
@@ -476,12 +541,17 @@ const server = http.createServer((req, res) => {
     if (agentsData && agentsData.agents) {
       for (const [name, data] of Object.entries(agentsData.agents)) {
         const computedStatus = agentStatus[data.name] || 'idle';
-        const session = agentSessions[data.name] || {};
+        // Map agent name back to directory ID
+        const agentId = Object.entries(AGENT_DIR_TO_NAME).find(([k, v]) => v === data.name)?.[0];
+        
+        // Get task and model from latest session
+        const sessionInfo = agentId ? getAgentSessionInfo(agentId) : { task: null, model: null };
+        
         // Only show current task/model when actually working
-        // Prevents stale data from completed sessions
         const isWorking = computedStatus === 'working';
         agents.push({
           name: data.name,
+          tier: data.tier,
           role: data.rank,
           status: computedStatus,
           color: data.color,
@@ -489,8 +559,8 @@ const server = http.createServer((req, res) => {
           exp: data.exp,
           nextLevel: data.nextLevel,
           expProgress: Math.round((data.exp / data.nextLevel) * 100),
-          currentTask: isWorking ? (session.task || null) : null,
-          currentModel: isWorking ? (session.model || null) : null
+          currentTask: isWorking ? sessionInfo.task : null,
+          currentModel: isWorking ? sessionInfo.model : null
         });
       }
     }
