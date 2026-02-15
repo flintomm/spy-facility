@@ -269,16 +269,39 @@ function getAgentSessionInfo(agentId) {
           model = entry.message.model;
         }
         
-        // Get task from user message
+        // Get task from user message (skip system messages)
         if (entry.message?.role === 'user' && entry.message?.content) {
-          const content = entry.message.content;
-          if (typeof content === 'string') {
-            task = content.substring(0, 80) + (content.length > 80 ? '...' : '');
-          } else if (Array.isArray(content) && content[0]?.text) {
-            const text = content[0].text;
-            task = text.substring(0, 80) + (text.length > 80 ? '...' : '');
+          let content = entry.message.content;
+          
+          // Handle array content
+          if (Array.isArray(content) && content[0]?.text) {
+            content = content[0].text;
           }
-          break; // Found the last user message
+          
+          // Skip system/announcement messages
+          if (typeof content === 'string') {
+            // Filter out system headers and announcements
+            if (content.startsWith('System:') || 
+                content.startsWith('[Inter-session') ||
+                content.startsWith('Read HEARTBEAT') ||
+                content.startsWith('Agent checking in') ||
+                content.startsWith('Conversation info') ||
+                content.startsWith('```json') ||
+                content.startsWith('Pre-compaction') ||
+                content.startsWith('The user wants') ||
+                content.includes('untrusted metadata') ||
+                content.match(/^\[Sun \d{4}/)) {
+              continue; // Skip this message, keep looking
+            }
+            
+            // Clean up task text
+            task = content
+              .replace(/\[.*?\]/g, '') // Remove bracketed timestamps
+              .replace(/^\s+/, '')     // Remove leading whitespace
+              .substring(0, 80);
+            if (content.length > 80) task += '...';
+          }
+          break; // Found the last valid user message
         }
       } catch (e) {
         // Skip invalid lines
