@@ -217,14 +217,13 @@ function loadOpenClawSessionsJson() {
  */
 
 // Map agent directory name to display name
+// 5 agents only — no phantom agents
 const AGENT_DIR_TO_NAME = {
   main: 'Flint',
   cipher: 'Cipher',
-  scout: 'Scout',
   scrub: 'Scrub',
-  vera: 'Vera',
-  atlas: 'Atlas',
-  pulse: 'Pulse'
+  scout: 'Scout',
+  vera: 'Vera'
 };
 
 /**
@@ -271,11 +270,9 @@ function getAgentStatus() {
   const status = {
     Flint: 'idle',
     Cipher: 'idle',
-    Scout: 'idle',
     Scrub: 'idle',
-    Atlas: 'idle',
-    Vera: 'idle',
-    Pulse: 'idle'
+    Scout: 'idle',
+    Vera: 'idle'
   };
 
   // Check each agent's session directory directly

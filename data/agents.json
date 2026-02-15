@@ -8,13 +8,9 @@
       "nextLevel": 750,
       "rank": "Director",
       "color": "#FF8C00",
-      "deskItems": [
-        "radio",
-        "clipboard"
-      ],
-      "quartersItems": [
-        "bed"
-      ],
+      "model": "claude-opus-4-5",
+      "deskItems": ["radio", "clipboard"],
+      "quartersItems": ["bed"],
       "companion": "Lucky"
     },
     "Cipher": {
@@ -25,11 +21,9 @@
       "nextLevel": 500,
       "rank": "Systems",
       "color": "#00D4FF",
-      "deskItems": [
-        "rubberDuck",
-        "energyDrink"
-      ],
-      "quartersItems": [],
+      "model": "MiniMax-M2.5",
+      "deskItems": ["rubberDuck", "energyDrink"],
+      "quartersItems": ["bed"],
       "companion": null
     },
     "Scrub": {
@@ -40,57 +34,9 @@
       "nextLevel": 500,
       "rank": "Security",
       "color": "#8B0000",
-      "deskItems": [
-        "evidenceBag",
-        "shredder",
-        "blacklight",
-        "sanitizerSpray"
-      ],
-      "quartersItems": [],
-      "companion": null
-    },
-    "Atlas": {
-      "name": "Atlas",
-      "tier": 3,
-      "level": 1,
-      "exp": 0,
-      "nextLevel": 500,
-      "rank": "Tech Director",
-      "color": "#3366CC",
-      "deskItems": [
-        "blueprints"
-      ],
-      "quartersItems": [],
-      "companion": null
-    },
-    "Vera": {
-      "name": "Vera",
-      "tier": 3,
-      "level": 1,
-      "exp": 0,
-      "nextLevel": 500,
-      "rank": "Interior Designer",
-      "color": "#D4A574",
-      "deskItems": [
-        "succulent",
-        "sketchbook"
-      ],
-      "quartersItems": [],
-      "companion": "succulent"
-    },
-    "Pulse": {
-      "name": "Pulse",
-      "tier": 3,
-      "level": 1,
-      "exp": 0,
-      "nextLevel": 500,
-      "rank": "Status Monitor",
-      "color": "#39FF14",
-      "deskItems": [
-        "monitor",
-        "statusTerminal"
-      ],
-      "quartersItems": [],
+      "model": "MiniMax-M2.5",
+      "deskItems": ["shredder", "blacklight"],
+      "quartersItems": ["bed"],
       "companion": null
     },
     "Scout": {
@@ -101,10 +47,8 @@
       "nextLevel": 500,
       "rank": "Researcher",
       "color": "#9B59B6",
-      "deskItems": [
-        "notebook",
-        "coffee"
-      ],
+      "model": "kimi-k2p5",
+      "deskItems": ["notebook", "coffee"],
       "quartersItems": ["bed"],
       "companion": null
     },
@@ -114,12 +58,10 @@
       "level": 1,
       "exp": 0,
       "nextLevel": 500,
-      "rank": "Interior Designer",
+      "rank": "Designer",
       "color": "#D4A574",
-      "deskItems": [
-        "succulent",
-        "sketchbook"
-      ],
+      "model": "MiniMax-M2.5",
+      "deskItems": ["succulent", "sketchbook"],
       "quartersItems": ["bed"],
       "companion": null
     }
@@ -139,97 +81,48 @@
       "action": "ship",
       "exp": 50,
       "note": "Shipped: Stealth Approval Pane UI",
-      "model": "MiniMax-M2.5",
-      "timestamp": "2026-02-15T19:15:00Z"
+      "model": "MiniMax-M2.5"
     },
     {
       "date": "2026-02-15",
       "agent": "Cipher",
       "action": "ship",
       "exp": 50,
-      "note": "Shipped: Onboarded Vera (Interior Design)",
-      "model": "MiniMax-M2.5",
-      "timestamp": "2026-02-15T19:15:00Z"
+      "note": "Onboarded Vera + Scout",
+      "model": "MiniMax-M2.5"
     },
     {
       "date": "2026-02-15",
       "agent": "Cipher",
       "action": "ship",
       "exp": 50,
-      "note": "Shipped: Onboarded Scout (Researcher/Model Procurement)",
-      "model": "MiniMax-M2.5",
-      "timestamp": "2026-02-15T19:15:00Z"
-    },
-    {
-      "date": "2026-02-15",
-      "agent": "Cipher",
-      "action": "ship",
-      "exp": 50,
-      "note": "Onboarded Scrub (Cleaner) + fixed agent card uniformity",
-      "model": "minimax",
-      "timestamp": "2026-02-15T17:26:00Z"
-    },
-    {
-      "date": "2026-02-15",
-      "agent": "Flint",
-      "action": "fix",
-      "exp": 25,
-      "note": "Fixed Scrub's missing quarters — caught Cipher's gap",
-      "model": "kimi",
-      "timestamp": "2026-02-15T17:42:00Z"
-    },
-    {
-      "date": "2026-02-15",
-      "agent": "Cipher",
-      "action": "ship",
-      "exp": 50,
-      "note": "Shipped: Activity log format improvement",
-      "model": "MiniMax-M2.5",
-      "timestamp": "2026-02-15T18:05:34.718Z"
+      "note": "Onboarded Scrub + fixed agent cards",
+      "model": "MiniMax-M2.5"
     },
     {
       "date": "2026-02-15",
       "agent": "Flint",
       "action": "ship",
       "exp": 25,
-      "note": "Task assignment system — visual + API working",
-      "model": "kimi",
-      "timestamp": "2026-02-15T18:33:00Z"
-    },
-    {
-      "date": "2026-02-15",
-      "agent": "Flint",
-      "action": "ship",
-      "exp": 25,
-      "note": "Research: Orchestrator patterns — event-driven, hierarchical, CEO principles",
-      "model": "kimi",
-      "timestamp": "2026-02-15T18:48:00Z"
+      "note": "Multi-agent status detection fix",
+      "model": "claude-opus-4-5"
     }
   ],
   "modelStats": {
-    "kimi": {
-      "tasks": 3,
-      "totalExp": 75,
-      "wins": 3,
-      "losses": 0,
-      "agents": {
-        "Flint": {
-          "tasks": 3,
-          "totalExp": 75
-        }
-      }
+    "claude-opus-4-5": {
+      "tasks": 1,
+      "totalExp": 25,
+      "agents": {"Flint": {"tasks": 1, "totalExp": 25}}
     },
     "MiniMax-M2.5": {
-      "tasks": 4,
-      "totalExp": 200,
-      "wins": 4,
-      "losses": 0,
-      "agents": {
-        "Cipher": {
-          "tasks": 4,
-          "totalExp": 200
-        }
-      }
+      "tasks": 3,
+      "totalExp": 150,
+      "agents": {"Cipher": {"tasks": 3, "totalExp": 150}}
+    },
+    "kimi-k2p5": {
+      "tasks": 0,
+      "totalExp": 0,
+      "agents": {"Scout": {"tasks": 0, "totalExp": 0}}
     }
   }
 }
