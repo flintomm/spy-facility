@@ -596,6 +596,95 @@ const ROOMS = ROOM_LAYOUT.map(room => ({
   doorX: room.x + (room.w - 46) / 2
 }));
 
+// ===== COLLISION DETECTION =====
+const COLLISION_BOXES = [];
+
+// Build collision boxes from rooms (walls only, not interior)
+function initCollisionBoxes() {
+  COLLISION_BOXES.length = 0;
+  
+  // Add room walls (perimeter of each room)
+  ROOMS.forEach(room => {
+    // Top wall
+    COLLISION_BOXES.push({ x: room.x, y: room.y - 4, w: room.w, h: 6 });
+    // Bottom wall  
+    COLLISION_BOXES.push({ x: room.x, y: room.y + room.h - 2, w: room.w, h: 6 });
+    // Left wall
+    COLLISION_BOXES.push({ x: room.x - 4, y: room.y, w: 6, h: room.h });
+    // Right wall
+    COLLISION_BOXES.push({ x: room.x + room.w - 2, y: room.y, w: 6, h: room.h });
+  });
+  
+  // Add pod collision boxes
+  PODS.forEach((pod, i) => {
+    COLLISION_BOXES.push({ x: pod.x, y: pod.y, w: pod.w, h: 4 }); // Pod top
+    COLLISION_BOXES.push({ x: pod.x, y: pod.y + pod.h - 4, w: pod.w, h: 4 }); // Pod bottom
+    COLLISION_BOXES.push({ x: pod.x - 2, y: pod.y, w: 4, h: pod.h }); // Pod left
+    COLLISION_BOXES.push({ x: pod.x + pod.w - 2, y: pod.y, w: 4, h: pod.h }); // Pod right
+  });
+  
+  // Add corridor walls
+  const { spine } = CORRIDOR_SEGMENTS;
+  COLLISION_BOXES.push({ x: spine.x - 4, y: spine.y, w: 4, h: spine.h });
+  COLLISION_BOXES.push({ x: spine.x + spine.w, y: spine.y, w: 4, h: spine.h });
+  
+  // Add room furniture collision boxes (desks, couches, tables)
+  // R&D Lab
+  COLLISION_BOXES.push({ x: 60, y: 70, w: 100, h: 22 }); // Workbench
+  // Command room
+  COLLISION_BOXES.push({ x: 450, y: 60, w: 100, h: 22 }); // Big desk
+  COLLISION_BOXES.push({ x: 580, y: 100, w: 70, h: 25 }); // Couch
+  // Galley
+  COLLISION_BOXES.push({ x: 55, y: 100, w: 140, h: 16 }); // Counter
+  // Briefing room
+  COLLISION_BOXES.push({ x: 480, y: 80, w: 120, h: 22 }); // Conference table
+  // Lounge
+  COLLISION_BOXES.push({ x: 50, y: 690, w: 80, h: 25 }); // Couch
+  COLLISION_BOXES.push({ x: 340, y: 600, w: 80, h: 40 }); // Ping pong table
+  COLLISION_BOXES.push({ x: 50, y: 600, w: 40, h: 24 }); // Coffee table
+  
+  // Add collision boxes for Scout & Vera's desks (custom positions)
+  // Scout: deskPos (363, 135), Vera: deskPos (453, 135)
+  COLLISION_BOXES.push({ x: 363, y: 135, w: 80, h: 18 }); // Scout's desk
+  COLLISION_BOXES.push({ x: 453, y: 135, w: 80, h: 18 }); // Vera's desk
+}
+
+initCollisionBoxes();
+
+// Check if a point collides with any obstacle
+function checkCollision(x, y, radius = 8) {
+  for (const box of COLLISION_BOXES) {
+    if (x + radius > box.x && x - radius < box.x + box.w &&
+        y + radius > box.y && y - radius < box.y + box.h) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Find a valid position near target, avoiding collisions
+function findValidPosition(targetX, targetY, radius = 8) {
+  // If target is valid, return it
+  if (!checkCollision(targetX, targetY, radius)) {
+    return { x: targetX, y: targetY };
+  }
+  
+  // Search in expanding circles
+  for (let r = 20; r < 200; r += 20) {
+    for (let angle = 0; angle < 360; angle += 45) {
+      const rad = angle * Math.PI / 180;
+      const testX = targetX + Math.cos(rad) * r;
+      const testY = targetY + Math.sin(rad) * r;
+      if (!checkCollision(testX, testY, radius)) {
+        return { x: testX, y: testY };
+      }
+    }
+  }
+  
+  // Fallback: return target anyway (better than stuck)
+  return { x: targetX, y: targetY };
+}
+
 function podPos(col) {
   return {
     x: 40 + col * (POD_W + POD_GAP),
@@ -749,7 +838,7 @@ const AGENTS = [
     level:1, exp:0, nextLevel:500, expProgress:0
   },
   {
-    name:'Scout', role:'Researcher', color:'#9B59B6', podIndex:3,
+    name:'Scout', role:'Researcher', color:'#9B59B6', podIndex:-1, // No pod - uses custom deskPos
     deskItems:['notebook','coffee'],
     quartersItems:['bed'],
     deskPos: { x: 375, y: 155 }, // Lower position for shared office
@@ -758,7 +847,7 @@ const AGENTS = [
     level:1, exp:0, nextLevel:500, expProgress:0
   },
   {
-    name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:3, // Shares office with Scout
+    name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:-1, // No pod - uses custom deskPos
     deskItems:['succulent','sketchbook'],
     quartersItems:['bed'],
     deskPos: { x: 465, y: 155 }, // Side-by-side with Scout
@@ -2117,6 +2206,29 @@ function renderBackground() {
     drawPod(bg, pod, agent);
   });
 
+  // Draw desks for agents without pods (Scout & Vera)
+  AGENTS.filter(a => a.podIndex === -1 && a.deskPos).forEach(agent => {
+    const dx = agent.deskPos.x;
+    const dy = agent.deskPos.y;
+    // Draw desk
+    drawDesk(bg, dx, dy, 80, 18);
+    // Draw monitor
+    drawMonitor(bg, dx + 30, dy - 8, agent.status === 'working');
+    // Draw chair (if not working)
+    if (agent.status !== 'working') {
+      drawChair(bg, dx + 32, dy + 30);
+    }
+    // Draw name plate
+    drawNamePlate(bg, dx + 50, dy - 2, agent.name, agent.status);
+    // Draw desk items
+    if (agent.deskItems) {
+      if (agent.deskItems.includes('notebook')) drawSketchbook(bg, dx + 4, dy - 2);
+      if (agent.deskItems.includes('coffee')) drawCoffeeMachine(bg, dx + 60, dy + 2);
+      if (agent.deskItems.includes('succulent')) drawSucculent(bg, dx + 4, dy - 4);
+      if (agent.deskItems.includes('sketchbook')) drawSketchbook(bg, dx + 60, dy - 2);
+    }
+  });
+
   // ── FLOOR SEPARATOR ──
   rect(bg, 0, FLOOR_SEP_Y, TARGET_WIDTH, 2, '#3A5A7A');
   bg.fillStyle = '#3A5A7A';
@@ -2422,7 +2534,7 @@ class AgentEntity {
     if (cfg.deskPos) {
       // Use explicit desk position from config (for shared offices)
       this.deskPos = { x: cfg.deskPos.x - 12, y: cfg.deskPos.y - 20 };
-    } else if (cfg.podIndex !== null && cfg.podIndex !== undefined) {
+    } else if (cfg.podIndex !== null && cfg.podIndex !== undefined && cfg.podIndex >= 0) {
       this.pod = PODS[cfg.podIndex];
       const dc = deskCenter(this.pod);
       this.deskPos = { x: dc.x - 12, y: dc.y - 20 };
@@ -2564,9 +2676,25 @@ class AgentEntity {
       }
       return;
     }
+    
+    // Calculate proposed movement
     const mx = (dx/dist) * this.speed * dt;
     const my = (dy/dist) * this.speed * dt;
-    this.x += mx; this.y += my;
+    const newX = this.x + mx;
+    const newY = this.y + my;
+    
+    // Check collision - if collision, find valid position
+    if (checkCollision(newX, newY, 10)) {
+      const valid = findValidPosition(this.target.x, this.target.y, 10);
+      this.target.x = valid.x;
+      this.target.y = valid.y;
+      // Don't update position this frame - try again next frame
+      return;
+    }
+    
+    // No collision, move normally
+    this.x = newX;
+    this.y = newY;
     if (Math.abs(dx) > 2) this.facing = dx > 0 ? 1 : -1;
   }
   startWander() {
@@ -2862,15 +2990,15 @@ function drawExpandedCard(ctx, ent, x, y, cardWidth = 160, cardHeight = 90) {
   ctx.font = '9px "JetBrains Mono"';
   ctx.fillText(statusText, x + 8, y + 52);
 
-  // Task/Model subtitle (only when working)
+  // Task/Model subtitle (only when working) — positioned AFTER exp bar
   if (ent.status === 'working' && ent.currentTask) {
     ctx.fillStyle = C.barDim;
     ctx.font = '7px "JetBrains Mono"';
-    const taskText = ent.currentTask.length > 30 ? ent.currentTask.substring(0, 30) + '...' : ent.currentTask;
-    ctx.fillText(taskText, x + 8, y + 64);
+    const taskText = ent.currentTask.length > 25 ? ent.currentTask.substring(0, 25) + '...' : ent.currentTask;
+    ctx.fillText(taskText, x + 8, y + 76);
     
     if (ent.currentModel) {
-      ctx.fillText(`[${ent.currentModel}]`, x + 8, y + 74);
+      ctx.fillText(`[${ent.currentModel}]`, x + 8, y + 84);
     }
   }
 
@@ -5050,9 +5178,10 @@ function gameLoop(timestamp) {
   pollTimer += dt * 1000;
   if (pollTimer >= POLL_INTERVAL) { pollStatus(); fetchStatusBoardData(); pollTimer = 0; }
 
-  // Draw
+  // Draw - sort by Y for proper depth (lower Y = behind)
   renderBackground();
-  entities.forEach(e => e.draw(ctx));
+  const sortedEntities = [...entities].sort((a, b) => a.y - b.y);
+  sortedEntities.forEach(e => e.draw(ctx));
   companions.forEach(c => c.draw(ctx));
   // Note: drawQuartersOverlay removed - agents should only appear at their current positions, not duplicated in quarters
   

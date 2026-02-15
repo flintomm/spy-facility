@@ -2,11 +2,11 @@
   {
     "id": 1771190391232,
     "text": "Study pixel art fundamentals — read https://gamemaker.io/en/blog/make-pixel-art-2d-games and https://www.pixilart.com/. Create notes on: 1) Color theory for limited palettes, 2) Sprite sizing and scaling, 3) Animation basics for 2D games, 4) Best tools/workflows. Report: \"Vera checking in — [key learnings about pixel art]\"",
-    "done": false,
+    "done": true,
     "createdAt": "2026-02-15T21:19:51.232Z",
     "createdBy": "Flint",
     "assignedTo": "Vera",
-    "completedAt": null
+    "completedAt": "2026-02-15T23:15:00Z"
   },
   {
     "id": 1771191147730,
@@ -14,7 +14,7 @@
     "done": false,
     "createdAt": "2026-02-15T21:32:27.730Z",
     "createdBy": "Flint",
-    "assignedTo": "Vera",
+    "assignedTo": "Cipher",
     "completedAt": null
   }
 ]

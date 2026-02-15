@@ -483,5 +483,14 @@
     "action": "completed task",
     "task": "Onboard Scout (Researcher)",
     "exp": 50
+  },
+  {
+    "time": "2026-02-15T23:16:03.857Z",
+    "agent": "Vera",
+    "action": "Implemented: Completed pixel art fundamentals study — color theory, sprite sizing, animation basics, tools/workflows",
+    "task": "",
+    "exp": 50,
+    "grantedBy": "Flint",
+    "model": "unknown"
   }
 ]

@@ -76,7 +76,7 @@
       "name": "Vera",
       "tier": 3,
       "level": 1,
-      "exp": 0,
+      "exp": 50,
       "nextLevel": 500,
       "rank": "Designer",
       "color": "#D4A574",
@@ -131,6 +131,15 @@
       "exp": 25,
       "note": "Multi-agent status detection fix",
       "model": "claude-opus-4-5"
+    },
+    {
+      "agent": "Vera",
+      "action": "ship",
+      "exp": 50,
+      "note": "Completed pixel art fundamentals study — color theory, sprite sizing, animation basics, tools/workflows",
+      "model": "unknown",
+      "date": "2026-02-15",
+      "timestamp": "2026-02-15T23:16:03.857Z"
     }
   ],
   "modelStats": {
@@ -161,6 +170,18 @@
         "Scout": {
           "tasks": 0,
           "totalExp": 0
+        }
+      }
+    },
+    "unknown": {
+      "tasks": 1,
+      "totalExp": 50,
+      "wins": 1,
+      "losses": 0,
+      "agents": {
+        "Vera": {
+          "tasks": 1,
+          "totalExp": 50
         }
       }
     }
