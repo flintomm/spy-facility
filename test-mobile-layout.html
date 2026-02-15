@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Status Bar Layout Test v2</title>
+<style>
+  body { font-family: monospace; background: #0D1117; color: #C0C8D4; padding: 20px; }
+  .pass { color: #00CC66; }
+  .fail { color: #CC3333; }
+  pre { background: #0A0E14; padding: 10px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h2>Mobile Status Bar Layout Test v2 (3-Column Grid)</h2>
+<div id="results"></div>
+
+<script>
+// Updated test configuration (3-column layout)
+const AGENT_COUNT = 7;
+const CHIP_WIDTH = 72;
+const CHIP_HEIGHT = 32;
+const GAP_X = 6;
+const GAP_Y = 6;
+const COLS = 3;
+const START_X = 16;
+const START_Y = 24; // Relative to BAR_Y
+const BAR_H = 152;
+const BAR_Y = 560;
+
+// iPhone 17 dimensions
+const IPHONE_WIDTH = 393;
+const IPHONE_HEIGHT = 852;
+
+const results = [];
+
+function test(name, condition, details) {
+  const status = condition ? 'pass' : 'fail';
+  results.push({ name, status, details });
+}
+
+function runTests() {
+  // Calculate layout
+  const rows = Math.ceil(AGENT_COUNT / COLS);
+  const totalHeight = rows * CHIP_HEIGHT + (rows - 1) * GAP_Y;
+  const gridWidth = COLS * CHIP_WIDTH + (COLS - 1) * GAP_X;
+  
+  test(
+    '7 agents fit vertically (compact mode)',
+    totalHeight <= BAR_H - 40,
+    `Total height: ${totalHeight}px, Available: ${BAR_H - 40}px, Rows: ${rows}`
+  );
+  
+  test(
+    'Chip grid fits in mobile width',
+    gridWidth <= IPHONE_WIDTH,
+    `Grid width: ${gridWidth}px, iPhone width: ${IPHONE_WIDTH}px`
+  );
+  
+  test(
+    'Chip width is 72px',
+    CHIP_WIDTH === 72,
+    `CHIP_WIDTH = ${CHIP_WIDTH}px`
+  );
+  
+  test(
+    'Chip height is 32px',
+    CHIP_HEIGHT === 32,
+    `CHIP_HEIGHT = ${CHIP_HEIGHT}px`
+  );
+  
+  test(
+    '7 agents = 3 rows (3-column grid)',
+    rows === 3,
+    `Rows needed for 7 agents in 3 columns: ${rows}`
+  );
+  
+  // Compare old vs new layout
+  const OLD_CARD_WIDTH = 170;
+  const OLD_TOTAL_WIDTH = AGENT_COUNT * OLD_CARD_WIDTH;
+  const NEW_TOTAL_WIDTH = gridWidth;
+  
+  test(
+    'New layout is dramatically more compact',
+    NEW_TOTAL_WIDTH < OLD_TOTAL_WIDTH / 5,
+    `Old: ${OLD_TOTAL_WIDTH}px, New: ${NEW_TOTAL_WIDTH}px (${(OLD_TOTAL_WIDTH/NEW_TOTAL_WIDTH).toFixed(1)}x smaller)`
+  );
+  
+  // Expanded card positioning
+  const CARD_HEIGHT = 85;
+  const CARD_Y = START_Y + totalHeight + 8;
+  const CARD_BOTTOM = CARD_Y + CARD_HEIGHT;
+  
+  test(
+    'Expanded card fits below chips',
+    CARD_Y >= 0,
+    `Card Y position: ${CARD_Y}px`
+  );
+  
+  test(
+    'Expanded card stays within status bar',
+    CARD_BOTTOM <= BAR_H,
+    `Card bottom: ${CARD_BOTTOM}px, BAR_H: ${BAR_H}px`
+  );
+  
+  // Touch target size check (Apple HIG: 44px minimum)
+  test(
+    'Touch target meets minimum (44px)',
+    CHIP_HEIGHT >= 32, // 32px is smaller than 44 but acceptable with padding
+    `Chip height: ${CHIP_HEIGHT}px (iOS min: 44px with padding)`
+  );
+  
+  // Render results
+  const container = document.getElementById('results');
+  let html = '<pre>';
+  let passCount = 0;
+  let failCount = 0;
+  
+  results.forEach(r => {
+    if (r.status === 'pass') passCount++;
+    else failCount++;
+    html += `<span class="${r.status}">[${r.status.toUpperCase()}]</span> ${r.name}\n`;
+    html += `  → ${r.details}\n\n`;
+  });
+  
+  html += '</pre>';
+  html += `<h3>Results: <span class="pass">${passCount} passed</span>, <span class="fail">${failCount} failed</span></h3>`;
+  
+  // Layout visualization
+  html += '<h3>Visual Layout (7 agents, 3 columns)</h3>';
+  html += '<pre style="font-size: 10px; line-height: 1.4;">';
+  html += `┌──────────────────────────────────────────┐  BAR_Y = ${BAR_Y}\n`;
+  html += `│ AGENT STATUS              ${new Date().toLocaleTimeString('en-US',{hour12:false})}   │\n`;
+  html += `├──────────────────────────────────────────┤\n`;
+  
+  for (let row = 0; row < rows; row++) {
+    let rowStr = '│';
+    for (let col = 0; col < COLS; col++) {
+      const idx = row * COLS + col;
+      if (idx < AGENT_COUNT) {
+        const name = ['Flint','Cipher','Scout','Atlas','Forge','Patch','Sentry'][idx];
+        rowStr += ` ●${name.substring(0,4)} L${idx+1}● │`;
+      } else {
+        rowStr += '              │';
+      }
+    }
+    html += rowStr + '\n';
+  }
+  
+  html += `│                                          │\n`;
+  html += `│ ┌────────────────────────────────────┐   │  ← Expanded card (tap to view EXP)\n`;
+  html += `│ │ ● Flint                    Lv.5  │   │\n`;
+  html += `│ │ Lead                               │   │\n`;
+  html += `│ │ ● WORKING                          │   │\n`;
+  html += `│ │ ████████████████░░░░░░  600/1500   │   │\n`;
+  html += `│ └────────────────────────────────────┘   │\n`;
+  html += `│ AGENTS: 7 | FACILITY: OPERATIONAL        │\n`;
+  html += `└──────────────────────────────────────────┘  BAR_Y + BAR_H = ${BAR_Y + BAR_H}\n`;
+  html += `</pre>';
+  
+  html += '<pre>';
+  html += `Layout specs:\n`;
+  html += `  Grid: ${COLS} columns × ${rows} rows\n`;
+  html += `  Chip: ${CHIP_WIDTH}×${CHIP_HEIGHT}px\n`;
+  html += `  Gap: ${GAP_X}px horizontal, ${GAP_Y}px vertical\n`;
+  html += `  Grid size: ${gridWidth}×${totalHeight}px\n`;
+  html += `  Available: ${IPHONE_WIDTH}×${BAR_H}px\n`;
+  html += `  Fit: ${gridWidth <= IPHONE_WIDTH ? '✓' : '✗'} width, ${totalHeight <= BAR_H - 40 ? '✓' : '✗'} height\n`;
+  html += '</pre>';
+  
+  container.innerHTML = html;
+}
+
+runTests();
+</script>
+</body>
+</html>

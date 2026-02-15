@@ -17,6 +17,8 @@
     <true/>
     <key>StandardOutPath</key>
     <string>/Users/flint/.openclaw/workspace/spy-facility/logs/service.log</string>
+    <key>StandardOutputPath</key>
+    <string>/Users/flint/.openclaw/workspace/spy-facility/logs/stdout.log</string>
     <key>StandardErrorPath</key>
     <string>/Users/flint/.openclaw/workspace/spy-facility/logs/error.log</string>
 </dict>

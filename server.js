@@ -1,14 +1,13 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const chokidar = require('chokidar');
 
 const MESHNET_IP = process.env.MESHNET_IP || '0.0.0.0';
 const PORT = process.env.PORT || 8080;
 
-// Server start time for uptime calculation
 const SERVER_START_TIME = Date.now();
 
-// MIME types
 const mimeTypes = {
   '.html': 'text/html',
   '.js': 'application/javascript',
@@ -20,10 +19,13 @@ const mimeTypes = {
   '.ico': 'image/x-icon'
 };
 
-// Cache for agent status
-let cachedStatus = null;
-let cacheTimestamp = 0;
-const CACHE_TTL_MS = 5000; // 5 seconds
+// ============================================================================
+// SIMPLIFIED STATUS DETECTION CONFIG
+// ============================================================================
+// Flint (main agent): 60s timeout - generous for thinking/deep work periods
+// Subagents: 30s timeout - tighter since they should be actively working
+const FLINT_TIMEOUT_MS = 60000;
+const SUBAGENT_TIMEOUT_MS = 30000;
 
 const SESSIONS_DIR = path.join(
   process.env.HOME || '/Users/flint',
@@ -31,8 +33,15 @@ const SESSIONS_DIR = path.join(
 );
 
 const AGENTS_JSON_PATH = path.join(__dirname, 'data', 'agents.json');
+const AGENT_SESSIONS_PATH = path.join(__dirname, 'data', 'agent-sessions.json');
 
-// Load agents data from JSON file
+// In-memory cache of last activity timestamps per session
+const sessionActivity = new Map();
+
+// ============================================================================
+// DATA HELPERS
+// ============================================================================
+
 function loadAgentsData() {
   try {
     const data = fs.readFileSync(AGENTS_JSON_PATH, 'utf8');
@@ -43,457 +52,565 @@ function loadAgentsData() {
   }
 }
 
-// Read sessions.json to get active session list
-function readSessionsIndex() {
+function saveAgentsData(agentsData) {
+  try {
+    fs.writeFileSync(AGENTS_JSON_PATH, JSON.stringify(agentsData, null, 2));
+  } catch (err) {
+    console.error('Error saving agents.json:', err.message);
+  }
+}
+
+function updateAgentExp(agentName, expChange) {
+  const agentsData = loadAgentsData();
+  if (!agentsData || !agentsData.agents || !agentsData.agents[agentName]) {
+    return null;
+  }
+  
+  const agent = agentsData.agents[agentName];
+  agent.exp = (agent.exp || 0) + expChange;
+  
+  while (agent.exp >= agent.nextLevel) {
+    agent.level += 1;
+    agent.nextLevel = Math.floor(agent.nextLevel * 1.5);
+  }
+  
+  if (agent.exp < 0) agent.exp = 0;
+  
+  saveAgentsData(agentsData);
+  console.log(`[EXP] ${agentName}: ${expChange > 0 ? '+' : ''}${expChange} EXP (total: ${agent.exp}, Lv${agent.level})`);
+  return agent;
+}
+
+function loadAgentSessionMap() {
+  try {
+    if (fs.existsSync(AGENT_SESSIONS_PATH)) {
+      return JSON.parse(fs.readFileSync(AGENT_SESSIONS_PATH, 'utf8'));
+    }
+  } catch (err) {
+    console.error('[STATUS] Error reading agent-sessions.json:', err.message);
+  }
+  return {};
+}
+
+function saveAgentSessionMap(map) {
+  try {
+    fs.writeFileSync(AGENT_SESSIONS_PATH, JSON.stringify(map, null, 2));
+  } catch (err) {
+    console.error('[STATUS] Error saving agent-sessions.json:', err.message);
+  }
+}
+
+// ============================================================================
+// ACTIVITY TRACKING
+// ============================================================================
+
+/**
+ * Get the last entry from a JSONL file
+ * Returns null if file doesn't exist or has no valid JSON entries
+ */
+function getLastJsonlEntry(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const stats = fs.statSync(filePath);
+    if (stats.size === 0) return null;
+    
+    // Read last 8KB of file (covers most recent activity)
+    const readSize = Math.min(8192, stats.size);
+    const buffer = Buffer.alloc(readSize);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, readSize, stats.size - readSize);
+    fs.closeSync(fd);
+    
+    const chunk = buffer.toString('utf8');
+    const lines = chunk.split('\n');
+    
+    // Find last valid JSON line
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line.startsWith('{')) {
+        try {
+          return JSON.parse(line);
+        } catch (e) {
+          // Skip invalid JSON
+        }
+      }
+    }
+  } catch (err) {
+    // Ignore errors - file may not exist or be unreadable
+  }
+  return null;
+}
+
+/**
+ * Get timestamp of last activity from a session's JSONL file
+ * Returns 0 if no activity found
+ */
+function getSessionLastActivity(sessionId) {
+  const jsonlPath = path.join(SESSIONS_DIR, `${sessionId}.jsonl`);
+  const entry = getLastJsonlEntry(jsonlPath);
+  
+  if (entry && entry.timestamp) {
+    return new Date(entry.timestamp).getTime();
+  }
+  return 0;
+}
+
+/**
+ * Load OpenClaw's sessions.json to get sessionId -> sessionKey mapping
+ * This tells us which session file belongs to which agent key
+ */
+function loadOpenClawSessionsJson() {
+  const map = {};
   try {
     const sessionsPath = path.join(SESSIONS_DIR, 'sessions.json');
-    const data = fs.readFileSync(sessionsPath, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error('Error reading sessions index:', err.message);
-    return null;
-  }
-}
-
-// Parse model from session JSONL file (read last 100 lines for most recent model)
-function getLatestModel(sessionId) {
-  try {
-    const jsonlPath = path.join(SESSIONS_DIR, `${sessionId}.jsonl`);
-    if (!fs.existsSync(jsonlPath)) return null;
-    
-    const data = fs.readFileSync(jsonlPath, 'utf8');
-    const lines = data.trim().split('\n');
-    const lastLines = lines.slice(-100); // Get last 100 lines
-    
-    for (let i = lastLines.length - 1; i >= 0; i--) {
-      const line = lastLines[i];
-      if (!line.trim()) continue;
-      try {
-        const entry = JSON.parse(line);
-        
-        // Check for model_change event
-        if (entry.type === 'model_change' && entry.modelId) {
-          return entry.modelId.toLowerCase();
+    if (fs.existsSync(sessionsPath)) {
+      const data = JSON.parse(fs.readFileSync(sessionsPath, 'utf8'));
+      for (const [key, val] of Object.entries(data)) {
+        if (val && val.sessionId) {
+          map[val.sessionId] = key;
         }
-        
-        // Check for model-snapshot custom event
-        if (entry.type === 'custom' && entry.customType === 'model-snapshot' && entry.data?.modelId) {
-          return entry.data.modelId.toLowerCase();
-        }
-      } catch (e) {
-        continue;
       }
     }
-    return null;
   } catch (err) {
-    return null;
+    console.error('[STATUS] Error reading OpenClaw sessions.json:', err.message);
   }
+  return map;
 }
 
-// Check if session has recent message activity (within last 5 seconds)
-function getSessionMessageActivity(sessionId, maxLines = 50) {
-  try {
-    const jsonlPath = path.join(SESSIONS_DIR, `${sessionId}.jsonl`);
-    if (!fs.existsSync(jsonlPath)) {
-      return { hasRecentActivity: false, lastActivity: null, model: null };
-    }
+// ============================================================================
+// SIMPLIFIED STATUS DETECTION
+// ============================================================================
 
-    const data = fs.readFileSync(jsonlPath, 'utf8');
-    const lines = data.trim().split('\n');
-
-    // Check last N lines for recent activity
-    const lastLines = lines.slice(-maxLines);
-    const fiveSecondsAgo = Date.now() - 5000; // 5 second window
-
-    for (let i = lastLines.length - 1; i >= 0; i--) {
-      const line = lastLines[i];
-      if (!line.trim()) continue;
-      try {
-        const entry = JSON.parse(line);
-        // Handle both numeric timestamps and ISO date strings
-        const entryTime = entry.timestamp ? new Date(entry.timestamp).getTime() : null;
-        if (entryTime && entryTime > fiveSecondsAgo) {
-          return {
-            hasRecentActivity: true,
-            lastActivity: entryTime,
-            model: entry.modelId || entry.model || null
-          };
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-    return { hasRecentActivity: false, lastActivity: null, model: null };
-  } catch (err) {
-    console.error(`[STATUS] Error checking session ${sessionId}:`, err.message);
-    return { hasRecentActivity: false, lastActivity: null, model: null };
-  }
-}
-
-// Check if main session has recent activity (for Flint status)
-function getMainSessionActivity() {
-  try {
-    const sessions = readSessionsIndex();
-    if (!sessions || !sessions['agent:main:main']) return null;
-
-    const mainSession = sessions['agent:main:main'];
-    const sessionId = mainSession.sessionId;
-    if (!sessionId) return null;
-
-    return getSessionMessageActivity(sessionId, 50);
-  } catch (err) {
-    console.error('[STATUS] Error checking main session:', err.message);
-    return null;
-  }
-}
-
-// Get real agent status from OpenClaw sessions
-function getRealAgentStatus() {
-  const sessions = readSessionsIndex();
-  const agentsData = loadAgentsData();
-  
-  if (!sessions) {
-    console.log('[STATUS] No sessions data, using fallback');
-    return getFallbackStatus(agentsData);
-  }
-
-  // Check main session for Flint's activity (model-agnostic)
-  const mainActivity = getMainSessionActivity();
-  const flintActive = mainActivity?.hasRecentActivity || false;
-  const flintModel = mainActivity?.model || null;
-  
-  console.log(`[STATUS] Main session activity: active=${flintActive}, model=${flintModel}`);
-
-  // Track Cipher activity separately - only if there's an ACTIVE subagent with recent MESSAGES
-  let cipherActive = false;
-  let cipherSession = null;
-
-  // Analyze each session for Cipher (subagents, etc.) - check actual message activity
-  for (const [sessionKey, sessionData] of Object.entries(sessions)) {
-    const sessionId = sessionData.sessionId;
-    if (!sessionId) continue;
-
-    // Skip main session - we already handled Flint above
-    if (sessionKey === 'agent:main:main') continue;
-
-    // Get model from JSONL file (most recent) or fallback to sessions.json
-    let model = getLatestModel(sessionId);
-
-    // Fallback: try to get model from session data or origin
-    if (!model) {
-      model = (sessionData.model || sessionData.origin?.model || '').toLowerCase();
-    }
-
-    const label = (sessionData.label || sessionData.origin?.label || '').toLowerCase();
-
-    // Cipher: kimi models OR label containing 'cipher'
-    const isCipherModel = model.includes('kimi') || model === 'k2p5' || model.includes('moonshot') || label.includes('cipher');
-
-    if (!isCipherModel) continue;
-
-    // Check for ACTUAL recent message activity in this subagent session (not just updatedAt)
-    const activity = getSessionMessageActivity(sessionId, 20);
-
-    console.log(`[STATUS] Session ${sessionKey}: model=${model}, label=${label}, recentMsg=${activity.hasRecentActivity}`);
-
-    if (activity.hasRecentActivity) {
-      cipherActive = true;
-      cipherSession = { key: sessionKey, model, label };
-      // Don't break - continue checking to log all active cipher sessions
-    }
-  }
-
-  console.log(`[STATUS] Result: Flint=${flintActive ? 'working' : 'idle'}, Cipher=${cipherActive ? 'working' : 'idle'}`);
-
-  // Build status array with EXP/level data from agents.json
-  const agents = [];
-  
-  if (agentsData && agentsData.agents) {
-    // Build from agents.json with real status
-    for (const [key, agent] of Object.entries(agentsData.agents)) {
-      let status = 'idle';
-      if (key === 'Flint') status = flintActive ? 'working' : 'idle';
-      else if (key === 'Cipher') status = cipherActive ? 'working' : 'idle';
-      
-      agents.push({
-        name: agent.name,
-        role: agent.rank,
-        status: status,
-        color: agent.color,
-        level: agent.level,
-        exp: agent.exp,
-        nextLevel: agent.nextLevel,
-        expProgress: Math.round((agent.exp / agent.nextLevel) * 100),
-        session: key === 'Flint' ? (flintActive ? { key: 'agent:main:main', model: flintModel || 'active' } : null) : 
-                 (key === 'Cipher' && cipherActive ? cipherSession : null)
-      });
-    }
-  } else {
-    // Fallback without agents.json
-    agents.push(
-      { 
-        name: 'Flint', 
-        role: 'Lead', 
-        status: flintActive ? 'working' : 'idle', 
-        color: '#FF8C00',
-        level: 1,
-        exp: 0,
-        nextLevel: 500,
-        expProgress: 0,
-        session: flintActive ? { key: 'agent:main:main', model: flintModel || 'active' } : null
-      },
-      { 
-        name: 'Cipher', 
-        role: 'Coder', 
-        status: cipherActive ? 'working' : 'idle', 
-        color: '#00D4FF',
-        level: 1,
-        exp: 0,
-        nextLevel: 500,
-        expProgress: 0,
-        session: cipherSession
-      },
-      { 
-        name: 'Scout', 
-        role: 'Research', 
-        status: 'idle', 
-        color: '#00CC66',
-        level: 1,
-        exp: 0,
-        nextLevel: 500,
-        expProgress: 0,
-        session: null
-      }
-    );
-  }
-
-  return agents;
-}
-
-// Fallback status when we can't read real data
-function getFallbackStatus(agentsData) {
-  if (agentsData && agentsData.agents) {
-    return Object.values(agentsData.agents).map(agent => ({
-      name: agent.name,
-      role: agent.rank,
-      status: 'idle',
-      color: agent.color,
-      level: agent.level,
-      exp: agent.exp,
-      nextLevel: agent.nextLevel,
-      expProgress: Math.round((agent.exp / agent.nextLevel) * 100),
-      session: null
-    }));
-  }
-  
-  return [
-    { name: 'Flint', role: 'Lead', status: 'idle', color: '#FF8C00', level: 1, exp: 0, nextLevel: 500, expProgress: 0, session: null },
-    { name: 'Cipher', role: 'Coder', status: 'idle', color: '#00D4FF', level: 1, exp: 0, nextLevel: 500, expProgress: 0, session: null },
-    { name: 'Scout', role: 'Research', status: 'idle', color: '#00CC66', level: 1, exp: 0, nextLevel: 500, expProgress: 0, session: null }
-  ];
-}
-
-// Get activity feed from agents.json history
-function getActivityFeed() {
-  const agentsData = loadAgentsData();
-  if (!agentsData || !agentsData.history) {
-    return [];
-  }
-  
-  // Transform history into activity feed format
-  const activities = agentsData.history.map(item => {
-    const timestamp = item.timestamp || new Date().toISOString();
-    const time = new Date(timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const expChange = item.exp > 0 ? `+${item.exp}` : `${item.exp}`;
-    return {
-      time,
-      agent: item.agent,
-      action: item.note || item.action,
-      expChange,
-      exp: item.exp,
-      date: item.date
-    };
-  });
-  
-  // Sort by date/time descending, take last 10
-  return activities.reverse().slice(0, 10);
-}
-
-// Get EXP leaderboard (agents sorted by total EXP)
-function getLeaderboard() {
-  const agentsData = loadAgentsData();
-  if (!agentsData || !agentsData.agents) {
-    return [];
-  }
-  
-  return Object.values(agentsData.agents)
-    .map(agent => ({
-      name: agent.name,
-      exp: agent.exp,
-      level: agent.level,
-      color: agent.color
-    }))
-    .sort((a, b) => b.exp - a.exp);
-}
-
-// Get recent shipments/bugs (last 3-5 events)
-function getRecentEvents() {
-  const agentsData = loadAgentsData();
-  if (!agentsData || !agentsData.history) {
-    return [];
-  }
-  
-  return agentsData.history
-    .slice(-5)
-    .reverse()
-    .map(item => ({
-      agent: item.agent,
-      action: item.note || item.action,
-      exp: item.exp,
-      expChange: item.exp > 0 ? `+${item.exp}` : `${item.exp}`
-    }));
-}
-
-// Get system health info
-function getSystemHealth() {
-  const uptime = Date.now() - SERVER_START_TIME;
-  const uptimeSecs = Math.floor(uptime / 1000);
-  const hours = Math.floor(uptimeSecs / 3600);
-  const mins = Math.floor((uptimeSecs % 3600) / 60);
-  const secs = uptimeSecs % 60;
-  
-  return {
-    uptime: `${hours}h ${mins}m ${secs}s`,
-    uptimeMs: uptime,
-    startTime: new Date(SERVER_START_TIME).toISOString(),
-    startTimeFormatted: new Date(SERVER_START_TIME).toLocaleString('en-US'),
-    status: 'OPERATIONAL'
-  };
-}
-
-// Cached wrapper
-function getCachedAgentStatus() {
+/**
+ * Determine agent status based on simple activity timeout rules:
+ * 
+ * FLINT (agent:main:main):
+ *   - WORKING: JSONL activity in last 60s
+ *   - IDLE: No JSONL activity in last 60s
+ *   - Rationale: Flint's session always exists, so we need timeout to flip to IDLE
+ * 
+ * SUBAGENTS (Cipher, Vera, etc):
+ *   - WORKING: Registered in agent-sessions.json AND JSONL activity in last 30s
+ *   - IDLE: Not registered OR no JSONL activity in last 30s
+ *   - Rationale: Subagents should be actively working when spawned, 30s is tight
+ */
+function getAgentStatus() {
   const now = Date.now();
-  if (cachedStatus && (now - cacheTimestamp) < CACHE_TTL_MS) {
-    console.log(`[CACHE] Returning cached status (age: ${now - cacheTimestamp}ms)`);
-    return cachedStatus;
+  const status = {
+    Flint: 'idle',
+    Cipher: 'idle',
+    Atlas: 'idle',
+    Vera: 'idle',
+    Pulse: 'idle'
+  };
+
+  // Load session mappings
+  const openClawMap = loadOpenClawSessionsJson(); // sessionId -> sessionKey
+  const agentRegistry = loadAgentSessionMap();    // agentName -> {sessionId, ...}
+
+  // Build reverse map: sessionId -> agentName from registry
+  const registrySessionToAgent = {};
+  for (const [agentName, info] of Object.entries(agentRegistry)) {
+    if (info.sessionId) {
+      registrySessionToAgent[info.sessionId] = agentName;
+    }
   }
-  
-  cachedStatus = getRealAgentStatus();
-  cacheTimestamp = now;
-  return cachedStatus;
+
+  // Build complete sessionId -> agent mapping
+  const sessionToAgent = {};
+  for (const [sessionId, sessionKey] of Object.entries(openClawMap)) {
+    // Check if this session is in the registry first
+    if (registrySessionToAgent[sessionId]) {
+      sessionToAgent[sessionId] = registrySessionToAgent[sessionId];
+    } else if (sessionKey === 'agent:main:main') {
+      // Flint's main session
+      sessionToAgent[sessionId] = 'Flint';
+    }
+  }
+  // Add any registry entries that weren't in OpenClaw map (fallback)
+  for (const [agentName, info] of Object.entries(agentRegistry)) {
+    if (info.sessionId && !sessionToAgent[info.sessionId]) {
+      sessionToAgent[info.sessionId] = agentName;
+    }
+  }
+
+  // Check activity for each known session
+  for (const [sessionId, agentName] of Object.entries(sessionToAgent)) {
+    if (!status.hasOwnProperty(agentName)) continue;
+
+    let lastActivity = getSessionLastActivity(sessionId);
+    
+    // If no activity yet, use session start time from registry
+    if (lastActivity === 0 && agentRegistry[agentName] && agentRegistry[agentName].startedAt) {
+      lastActivity = new Date(agentRegistry[agentName].startedAt).getTime();
+    }
+    
+    if (lastActivity === 0) continue; // No activity and no start time
+
+    const age = now - lastActivity;
+    
+    if (agentName === 'Flint') {
+      // Flint: 60s timeout
+      if (age < FLINT_TIMEOUT_MS) {
+        status.Flint = 'working';
+      }
+    } else {
+      // Subagent: must be registered + 30s timeout
+      const isRegistered = agentRegistry[agentName] && agentRegistry[agentName].sessionId === sessionId;
+      if (isRegistered && age < SUBAGENT_TIMEOUT_MS) {
+        status[agentName] = 'working';
+      }
+    }
+  }
+
+  return status;
 }
+
+// ============================================================================
+// FILE WATCHER (for real-time updates)
+// ============================================================================
+
+const watcher = chokidar.watch(SESSIONS_DIR, {
+  persistent: true,
+  usePolling: true,
+  interval: 1000,
+  ignoreInitial: false,
+  depth: 0
+});
+
+// Update activity cache when JSONL files change
+watcher.on('change', (filePath) => {
+  if (!filePath.endsWith('.jsonl')) return;
+  const sessionId = path.basename(filePath, '.jsonl');
+  const entry = getLastJsonlEntry(filePath);
+  if (entry && entry.timestamp) {
+    const activityTime = new Date(entry.timestamp).getTime();
+    sessionActivity.set(sessionId, {
+      lastActivity: activityTime,
+      model: entry.modelId || entry.model || null
+    });
+  }
+});
+
+watcher.on('add', (filePath) => {
+  if (!filePath.endsWith('.jsonl')) return;
+  const sessionId = path.basename(filePath, '.jsonl');
+  const entry = getLastJsonlEntry(filePath);
+  if (entry && entry.timestamp) {
+    const activityTime = new Date(entry.timestamp).getTime();
+    sessionActivity.set(sessionId, {
+      lastActivity: activityTime,
+      model: entry.modelId || entry.model || null
+    });
+  }
+});
+
+watcher.on('unlink', (filePath) => {
+  if (!filePath.endsWith('.jsonl')) return;
+  const sessionId = path.basename(filePath, '.jsonl');
+  sessionActivity.delete(sessionId);
+});
+
+console.log('[WATCHER] File watcher initialized for real-time status');
+
+// ============================================================================
+// TODO / ACTIVITY SYSTEM
+// ============================================================================
+
+const activityFile = path.join(__dirname, 'data', 'todo-activity.json');
+const todosFile = path.join(__dirname, 'data', 'todos.json');
+
+function loadActivity() {
+  try {
+    if (fs.existsSync(activityFile)) {
+      return JSON.parse(fs.readFileSync(activityFile, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error loading activity:', err);
+  }
+  return [];
+}
+
+function saveActivity(activity) {
+  try {
+    fs.writeFileSync(activityFile, JSON.stringify(activity, null, 2));
+  } catch (err) {
+    console.error('Error saving activity:', err);
+  }
+}
+
+function logActivity(agent, action, taskText, extra = {}) {
+  const exp = extra.exp || 0;
+  const activity = loadActivity();
+  const entry = {
+    time: new Date().toISOString(),
+    agent,
+    action,
+    task: taskText,
+    exp: exp,
+    ...extra
+  };
+  activity.push(entry);
+  if (activity.length > 100) {
+    activity.shift();
+  }
+  saveActivity(activity);
+  const expStr = exp > 0 ? `+${exp}` : (exp < 0 ? `${exp}` : '');
+  console.log(`[TODO] ${agent}: ${expStr ? expStr + ' ' : ''}${action} "${taskText}"${extra.target ? ` to ${extra.target}` : ''}`);
+}
+
+function loadTodos() {
+  try {
+    if (fs.existsSync(todosFile)) {
+      return JSON.parse(fs.readFileSync(todosFile, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error loading todos:', err);
+  }
+  return [];
+}
+
+function saveTodos(todos) {
+  try {
+    fs.writeFileSync(todosFile, JSON.stringify(todos, null, 2));
+  } catch (err) {
+    console.error('Error saving todos:', err);
+  }
+}
+
+let todos = loadTodos();
+
+// ============================================================================
+// HTTP SERVER
+// ============================================================================
 
 const server = http.createServer((req, res) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
-
-  // API endpoint - employee status with EXP/level data
-  if (req.url === '/api/employee-status') {
-    try {
-      const status = getCachedAgentStatus();
-      res.writeHead(200, { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache'
-      });
-      res.end(JSON.stringify(status));
-    } catch (err) {
-      console.error('Error getting agent status:', err);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Failed to get agent status' }));
-    }
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  
+  // CORS headers for all responses
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Requester');
+  
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
     return;
   }
 
-  // NEW: API endpoint - activity feed
-  if (req.url === '/api/activity') {
-    try {
-      const activities = getActivityFeed();
-      res.writeHead(200, { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache'
-      });
-      res.end(JSON.stringify(activities));
-    } catch (err) {
-      console.error('Error getting activity feed:', err);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Failed to get activity feed' }));
+  // API: Employee Status (simplified WORKING/IDLE)
+  if (url.pathname === '/api/employee-status') {
+    const agentsData = loadAgentsData();
+    const agentStatus = getAgentStatus();
+    const agentSessions = loadAgentSessionMap();
+    
+    const agents = [];
+    if (agentsData && agentsData.agents) {
+      for (const [name, data] of Object.entries(agentsData.agents)) {
+        const computedStatus = agentStatus[data.name] || 'idle';
+        const session = agentSessions[data.name] || {};
+        // Only show current task/model when actually working
+        // Prevents stale data from completed sessions
+        const isWorking = computedStatus === 'working';
+        agents.push({
+          name: data.name,
+          role: data.rank,
+          status: computedStatus,
+          color: data.color,
+          level: data.level,
+          exp: data.exp,
+          nextLevel: data.nextLevel,
+          expProgress: Math.round((data.exp / data.nextLevel) * 100),
+          currentTask: isWorking ? (session.task || null) : null,
+          currentModel: isWorking ? (session.model || null) : null
+        });
+      }
     }
+    
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', agents }));
     return;
   }
 
-  // NEW: API endpoint - dashboard data (leaderboard, recent events, system health)
-  if (req.url === '/api/dashboard') {
-    try {
-      const dashboard = {
-        leaderboard: getLeaderboard(),
-        recentEvents: getRecentEvents(),
-        systemHealth: getSystemHealth()
-      };
-      res.writeHead(200, { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache'
-      });
-      res.end(JSON.stringify(dashboard));
-    } catch (err) {
-      console.error('Error getting dashboard data:', err);
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Failed to get dashboard data' }));
+  // API: Todos - GET
+  if (url.pathname === '/api/todos' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(todos));
+    return;
+  }
+
+  // API: Todos - POST
+  if (url.pathname === '/api/todos' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { action, text, id, assignedTo, requester } = JSON.parse(body);
+        const requesterName = requester || 'Flint';
+        
+        if (action === 'add' && text) {
+          const newTodo = {
+            id: Date.now(),
+            text,
+            done: false,
+            createdAt: new Date().toISOString(),
+            createdBy: requesterName,
+            assignedTo: assignedTo || null,
+            completedAt: null
+          };
+          todos.push(newTodo);
+          saveTodos(todos);
+          logActivity(requesterName, 'added task', text);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(todos));
+          return;
+        }
+        
+        if (action === 'complete' && id) {
+          const todo = todos.find(t => t.id == id);
+          if (todo) {
+            logActivity(requesterName, 'completed task', todo.text, { exp: 50 });
+            updateAgentExp(requesterName, 50);
+            todos = todos.filter(t => t.id != id);
+            saveTodos(todos);
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(todos));
+          return;
+        }
+
+        if (action === 'delete' && id) {
+          const todo = todos.find(t => t.id == id);
+          const taskText = todo ? todo.text : '';
+          todos = todos.filter(t => t.id != id);
+          saveTodos(todos);
+          logActivity(requesterName, 'deleted task', taskText, { exp: -25 });
+          updateAgentExp(requesterName, -25);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(todos));
+          return;
+        }
+
+        if (action === 'assign' && id && assignedTo) {
+          const todo = todos.find(t => t.id == id);
+          if (todo) {
+            const oldAssignee = todo.assignedTo;
+            todo.assignedTo = assignedTo;
+            saveTodos(todos);
+            if (oldAssignee !== assignedTo) {
+              logActivity(requesterName, 'assigned task', todo.text, { target: assignedTo });
+            }
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(todos));
+          return;
+        }
+        
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Unknown action' }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // API: Activity Feed
+  if (url.pathname === '/api/todos/activity' && req.method === 'GET') {
+    const activity = loadActivity();
+    const modelFilter = url.searchParams.get('model');
+    let filtered = activity;
+    if (modelFilter) {
+      filtered = activity.filter(a => (a.model || 'unknown') === modelFilter);
     }
+    const formatted = filtered.slice().reverse().map(a => {
+      const d = new Date(a.time);
+      const ts = d.toLocaleTimeString('en-US', { hour12: false });
+      return { ...a, time: ts, expChange: a.exp > 0 ? `+${a.exp}` : (a.exp < 0 ? `${a.exp}` : '') };
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(formatted));
+    return;
+  }
+
+  // API: Model Stats
+  if (url.pathname === '/api/model-stats' && req.method === 'GET') {
+    const agentsData = loadAgentsData();
+    const modelStats = (agentsData && agentsData.modelStats) || {};
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(modelStats));
+    return;
+  }
+
+  // API: Agent Sessions - POST (register/unregister)
+  if (url.pathname === '/api/agent-sessions' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { agent, sessionId, sessionKey, task, action } = JSON.parse(body);
+        let map = loadAgentSessionMap();
+        
+        if (action === 'start' && agent && sessionId) {
+          const model = JSON.parse(body).model || null;
+          map[agent] = { 
+            sessionId, 
+            sessionKey: sessionKey || null, 
+            task: task || null, 
+            model: model, 
+            startedAt: new Date().toISOString() 
+          };
+          console.log(`[AGENT-MAP] ${agent} → ${sessionId} (${task || 'no task'}, model: ${model || 'unknown'})`);
+          saveAgentSessionMap(map);
+        } else if (action === 'stop' && agent) {
+          delete map[agent];
+          console.log(`[AGENT-MAP] ${agent} stopped`);
+          saveAgentSessionMap(map);
+        }
+        
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(map));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // API: Agent Sessions - GET
+  if (url.pathname === '/api/agent-sessions' && req.method === 'GET') {
+    const map = loadAgentSessionMap();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(map));
     return;
   }
 
   // Static files
-  let filePath = req.url === '/' ? '/index.html' : req.url;
-  filePath = path.join(__dirname, filePath);
+  let filePath = url.pathname === '/' ? '/index.html' : url.pathname;
+  const fullPath = path.join(__dirname, filePath);
+  
+  if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+    const ext = path.extname(fullPath);
+    const contentType = mimeTypes[ext] || 'text/plain';
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(fs.readFileSync(fullPath));
+    return;
+  }
 
-  const ext = path.extname(filePath).toLowerCase();
-  const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
-      if (err.code === 'ENOENT') {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not found');
-      } else {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
-        res.end('Server error');
-      }
-    } else {
-      res.writeHead(200, { 
-        'Content-Type': contentType,
-        'Access-Control-Allow-Origin': '*'
-      });
-      res.end(content);
-    }
-  });
+  res.writeHead(404);
+  res.end('Not found');
 });
 
-// Try to bind - first attempt on Meshnet IP, fallback to all interfaces
-function startServer() {
-  server.listen(PORT, MESHNET_IP, () => {
-    console.log(`✅ Server running on http://${MESHNET_IP}:${PORT}`);
-    console.log(`📱 Access from your iPhone: http://${MESHNET_IP}:${PORT}`);
-    console.log(`🔌 Real-time agent status: ENABLED (cache: ${CACHE_TTL_MS}ms)`);
-    console.log(`📊 Dashboard endpoints:`);
-    console.log(`   - /api/employee-status (agents with EXP/levels)`);
-    console.log(`   - /api/activity (timestamped events)`);
-    console.log(`   - /api/dashboard (leaderboard + events + health)`);
-  });
-
-  server.on('error', (err) => {
-    if (err.code === 'EADDRNOTAVAIL') {
-      console.log(`⚠️  Meshnet IP ${MESHNET_IP} not available, trying 0.0.0.0...`);
-      server.listen(PORT, '0.0.0.0', () => {
-        console.log(`✅ Server running on http://0.0.0.0:${PORT}`);
-        console.log(`📱 Access from local network: http://<local-ip>:${PORT}`);
-      });
-    } else {
-      console.error('Server error:', err);
-    }
-  });
-}
-
-startServer();
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Server running on http://${MESHNET_IP}:${PORT}`);
+  console.log(`📱 Access from your iPhone: http://${MESHNET_IP}:${PORT}`);
+  console.log('🔌 Simplified status detection: ENABLED');
+  console.log(`   - Flint timeout: ${FLINT_TIMEOUT_MS / 1000}s (accounts for thinking/deep work)`);
+  console.log(`   - Subagent timeout: ${SUBAGENT_TIMEOUT_MS / 1000}s (tight, active work only)`);
+  console.log('📊 Dashboard endpoints:');
+  console.log('   - /api/employee-status (WORKING/IDLE status)');
+  console.log('   - /api/todos (task management)');
+  console.log('   - /api/todos/activity (activity feed)');
+});

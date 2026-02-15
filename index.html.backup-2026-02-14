@@ -24,7 +24,7 @@
     flex-direction: column;
     gap: 12px;
     padding: 12px;
-    width: min(820px, 100%);
+    width: min(860px, 100%);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.06);
     background: rgba(5, 8, 13, 0.92);
@@ -143,7 +143,7 @@ const zoomReadout = document.getElementById('zoom-readout');
 const zoomResetBtn = document.getElementById('zoom-reset');
 const ctx = canvas.getContext('2d');
 const TARGET_WIDTH = 800;
-const TARGET_HEIGHT = 1400; // Increased for 2-row quarters layout
+const TARGET_HEIGHT = 1000;
 canvas.width = TARGET_WIDTH;
 canvas.height = TARGET_HEIGHT;
 ctx.imageSmoothingEnabled = false;
@@ -316,25 +316,6 @@ canvas.addEventListener('click', (e) => {
   handleStatusBarClick(mouseX, mouseY);
 });
 
-// Mouse move for quarter item hover detection
-canvas.addEventListener('mousemove', (e) => {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  mouseCanvasPos.x = (e.clientX - rect.left) * scaleX;
-  mouseCanvasPos.y = (e.clientY - rect.top) * scaleY;
-  
-  // Check for quarter item hover
-  hoveredQuarterItem = null;
-  for (const item of quarterItemPositions) {
-    if (mouseCanvasPos.x >= item.x && mouseCanvasPos.x <= item.x + item.width &&
-        mouseCanvasPos.y >= item.y && mouseCanvasPos.y <= item.y + item.height) {
-      hoveredQuarterItem = item;
-      break;
-    }
-  }
-});
-
 // Touch support for mobile
 canvas.addEventListener('touchstart', (e) => {
   if (e.touches.length >= 2) {
@@ -493,11 +474,6 @@ const C = {
   cPants:'#2A2A38', cBoots:'#1A1A20', cBelt:'#2A3A4A',
   // Lucky
   lW:'#F0E8D8', lB:'#2A2018', lBr:'#8B6F4E', lNose:'#1A1410', lTongue:'#E87070',
-  // Vera (warm wood tones)
-  vHair:'#3D2817', vSkin:'#D4A574', vSkinS:'#C09060', vEye:'#1A1A2E',
-  vJacket:'#5C4A38', vJacketD:'#4A3728', vAccent:'#D4A574',
-  vPants:'#3A3028', vBoots:'#2A2018', vBelt:'#4A3A2A',
-  vSucculent:'#4CAF50', vSucculentD:'#2E7D32', vPot:'#8D6E63',
   // Furniture
   couch:'#3A2A40', couchL:'#4A3A50', couchD:'#2A1A30',
   shelf:'#3A3040', book1:'#8B2020', book2:'#204080', book3:'#206020', book4:'#806020',
@@ -529,14 +505,9 @@ const LOUNGE_Y = 540, LOUNGE_H = 200;
 
 // Floor 2 (Quarters) — below ops floor
 const FLOOR_SEP_Y = 760;
-const FLOOR2_Y = 800;
-const QUARTER_H = 150;
-const QUARTER_W = 230;
-const QUARTER_GAP = 18;
-// Quarters row 1 (3 quarters) + row 2 (1 quarter) = need more space
-const QUARTERS_ROW2_Y = FLOOR2_Y + QUARTER_H + 30; // Second row for Vera
-const BAR_H = 220;
-const BAR_Y = QUARTERS_ROW2_Y + QUARTER_H + 20; // 20px gap after quarters
+const FLOOR2_Y = 790;
+const BAR_H = 140;
+const BAR_Y = TARGET_HEIGHT - BAR_H;
 
 // Newspaper spot for Lucky's heartbeat run
 const NEWSPAPER_SPOT = { x: LOUNGE_X + LOUNGE_W - 140, y: LOUNGE_Y + LOUNGE_H - 30 };
@@ -561,16 +532,12 @@ let confirmModal = {
   onNo: null
 };
 
-// Tooltip state for quarter items
-let hoveredQuarterItem = null;
-let mouseCanvasPos = { x: 0, y: 0 };
-
 // Add Task modal state
 let addTaskModal = {
   active: false,
   taskText: '',
   selectedAssignee: '',
-  agents: ['Flint', 'Cipher', 'Atlas', 'Vera'],
+  agents: ['Flint', 'Cipher', 'Atlas'],
   onSubmit: null,
   onCancel: null,
   inputPos: { x: 0, y: 0, width: 0, height: 0 },
@@ -603,12 +570,14 @@ function podPos(col) {
 const PODS = [];
 for (let c = 0; c < 4; c++) PODS.push(podPos(c));
 
+const QUARTER_Y = FLOOR2_Y;
+const QUARTER_H = 150;
+const QUARTER_W = 230;
+const QUARTER_GAP = 18;
 const QUARTERS = [
-  { agent: 'Flint', label: "FLINT'S QUARTERS", x: 20, y: FLOOR2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 72, y: FLOOR2_Y + 60 } },
-  { agent: 'Cipher', label: "CIPHER'S QUARTERS", x: 20 + (QUARTER_W + QUARTER_GAP), y: FLOOR2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + (QUARTER_W + QUARTER_GAP) + 140, y: FLOOR2_Y + 58 } },
-  { agent: 'Atlas', label: "ATLAS' QUARTERS", x: 20 + 2 * (QUARTER_W + QUARTER_GAP), y: FLOOR2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + 2 * (QUARTER_W + QUARTER_GAP) + 60, y: FLOOR2_Y + 62 } },
-  // Vera's quarters - second row, first position
-  { agent: 'Vera', label: "VERA'S QUARTERS", x: 20, y: QUARTERS_ROW2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 72, y: QUARTERS_ROW2_Y + 60 } }
+  { agent: 'Flint', label: "FLINT'S QUARTERS", x: 20, y: QUARTER_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 72, y: QUARTER_Y + 60 } },
+  { agent: 'Cipher', label: "CIPHER'S QUARTERS", x: 20 + (QUARTER_W + QUARTER_GAP), y: QUARTER_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + (QUARTER_W + QUARTER_GAP) + 140, y: QUARTER_Y + 58 } },
+  { agent: 'Atlas', label: "ATLAS' QUARTERS", x: 20 + 2 * (QUARTER_W + QUARTER_GAP), y: QUARTER_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + 2 * (QUARTER_W + QUARTER_GAP) + 60, y: QUARTER_Y + 62 } }
 ];
 
 // ===== SCALABLE MEETING LOCATIONS =====
@@ -662,11 +631,6 @@ const GALLEY_POSITIONS = {
   'Lucky': { x: 200, y: ROOM_Y + ROOM_H + ROOM_GAP + 100 }
 };
 
-// Custom desk positions for agents without pods
-const CUSTOM_DESK_POSITIONS = {
-  // Currently none - all agents have pods
-};
-
 // Desk center positions (where agents sit)
 function deskCenter(pod) { return { x: pod.x + pod.w/2, y: pod.y + 52 }; }
 
@@ -675,7 +639,6 @@ const AGENTS = [
   {
     name:'Flint', role:'Lead', color:'#FF8C00', podIndex:0,
     deskItems:['radio','clipboard'],
-    quartersItems:['medals','tacticalMap','securePhone','familyPhoto'],
     companion:{ name:'Lucky', type:'boston_terrier' },
     status:'idle',
     level:5, exp:1125, nextLevel:1500, expProgress:0.75
@@ -683,7 +646,6 @@ const AGENTS = [
   {
     name:'Cipher', role:'Coder', color:'#00D4FF', podIndex:1,
     deskItems:['rubberDuck','energyDrink'],
-    quartersItems:['serverArray','retroConsole','coffeeMug','catPhoto'],
     companion:null,
     status:'idle',
     level:2, exp:500, nextLevel:750, expProgress:0.66
@@ -691,16 +653,7 @@ const AGENTS = [
   {
     name:'Atlas', role:'Tech Director', color:'#3366CC', podIndex:3,
     deskItems:[],
-    quartersItems:['medals','worldMap','journal','diploma'],
     companion:null,
-    status:'idle',
-    level:1, exp:25, nextLevel:500, expProgress:0.05
-  },
-  {
-    name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:2, // Pod 2, next to Cipher (pod 1)
-    deskItems:['succulent','sketchbook'],
-    quartersItems:['fabricSwatches','designBooks','polaroidWall','incense'],
-    companion:{ name:'Leaf', type:'succulent' },
     status:'idle',
     level:1, exp:25, nextLevel:500, expProgress:0.05
   }
@@ -908,35 +861,6 @@ function drawEnergyDrink(c, x, y) {
   rect(c, x+5, y+7, 2, 3, '#FFFFFF');
 }
 
-function drawSucculent(c, x, y) {
-  // Terracotta pot
-  rect(c, x+2, y+10, 10, 6, C.vPot || '#8D6E63');
-  rect(c, x+1, y+9, 12, 2, C.vPot || '#8D6E63');
-  // Soil
-  rect(c, x+3, y+8, 8, 2, '#5D4037');
-  // Succulent leaves (rosette pattern)
-  rect(c, x+4, y+4, 6, 5, C.vSucculent || '#4CAF50');
-  rect(c, x+3, y+5, 2, 3, C.vSucculentD || '#2E7D32');
-  rect(c, x+9, y+5, 2, 3, C.vSucculentD || '#2E7D32');
-  rect(c, x+5, y+3, 4, 2, '#66BB6A'); // lighter center
-  rect(c, x+6, y+2, 2, 2, '#81C784'); // top highlight
-}
-
-function drawSketchbook(c, x, y) {
-  // Book body (cream/tan)
-  rect(c, x+1, y+4, 12, 10, '#E8DCC8');
-  // Spine
-  rect(c, x, y+4, 2, 10, '#C8B890');
-  // Cover lines (sketch marks)
-  rect(c, x+3, y+6, 8, 1, '#B0A080');
-  rect(c, x+3, y+8, 6, 1, '#B0A080');
-  rect(c, x+3, y+10, 7, 1, '#B0A080');
-  // Pencil resting on top
-  rect(c, x+2, y+2, 10, 2, '#FFD54F');
-  rect(c, x+11, y+2, 2, 2, '#F5A0A0'); // eraser
-  rect(c, x+1, y+2, 2, 2, '#808080');  // tip
-}
-
 function drawWorkbench(c, x, y) {
   drawDesk(c, x, y, 100, 20);
   // Tools
@@ -964,22 +888,20 @@ function drawOscilloscope(c, x, y) {
 
 function drawShelf(c, x, y, w) {
   rect(c, x, y, w, 50, C.shelf);
-  // Books - deterministic widths (no Math.random to prevent twitching)
-  const bookWidthsTop = [6, 5, 7, 5, 6, 5, 7];
+  // Books
   const books = [C.book1,C.book2,C.book3,C.book4,C.book1,C.book2,C.book3];
   let bx = x + 3;
-  for (let i = 0; i < books.length; i++) {
-    const bw = bookWidthsTop[i % bookWidthsTop.length];
+  for (const bc of books) {
+    const bw = 4 + Math.random()*4|0;
     if (bx + bw > x + w - 3) break;
-    rect(c, bx, y+3, bw, 20, books[i]);
+    rect(c, bx, y+3, bw, 20, bc);
     bx += bw + 2;
   }
   rect(c, x, y+25, w, 2, C.wallTrim);
-  // Lower shelf books - deterministic widths
-  const bookWidthsBottom = [6, 5, 6, 7, 5];
+  // Lower shelf books
   bx = x + 3;
   for (let i = 0; i < 5; i++) {
-    const bw = bookWidthsBottom[i];
+    const bw = 5 + Math.random()*3|0;
     rect(c, bx, y+28, bw, 18, [C.book3,C.book4,C.book1,C.book2,C.book3][i]);
     bx += bw + 2;
   }
@@ -1129,488 +1051,6 @@ function drawBookshelf(c, x, y, w) {
   }
 }
 
-// ===== QUARTERS ITEMS (Vera's Design - Warm Golden Glow) =====
-// Item Categories:
-// - Medals/Awards: Gold (#FFD700) — service decorations
-// - Personal photos: Warm white (#F5F0E6) — family, companions
-// - Maps/Tactical: Amber (#FFAA00) — deployment locations
-// - Electronics: Cyan glow (#00D4FF) — secure phones
-// - Books: Brown/Tan (#8B6914) — journals, albums
-
-const QUARTER_ITEM_PALETTES = {
-  medals: { main:'#FFD700', shine:'#FFEC8B', dark:'#B8860B', ribbon:'#8B0000' },
-  tacticalMap: { main:'#FFAA00', lines:'#FFD700', dark:'#8B6914', pin:'#FF4444' },
-  securePhone: { main:'#00D4FF', screen:'#003040', glow:'#00FFFF', dark:'#006080' },
-  familyPhoto: { main:'#F5F0E6', frame:'#8B7355', dark:'#5C4033', photo:'#FFE4C4' },
-  serverArray: { main:'#00D4FF', dark:'#003040', light:'#40E0D0', led:'#FF00FF' },
-  retroConsole: { main:'#2A2A35', dark:'#1A1A25', light:'#3A3A45', led:'#00FF00' },
-  coffeeMug: { main:'#8B6914', dark:'#3D2817', steam:'#AAAAAA', liquid:'#5C4A1E' },
-  catPhoto: { main:'#F5F0E6', frame:'#C0A080', dark:'#8B7355' },
-  worldMap: { main:'#FFAA00', ocean:'#1A3A5A', land:'#4A6A3A', lines:'#FFD700' },
-  journal: { main:'#8B6914', pages:'#F5F0E6', dark:'#5C4A1E', strap:'#3D2817' },
-  diploma: { main:'#F5F0E6', frame:'#FFD700', dark:'#8B7355', seal:'#CC0000' },
-  fabricSwatches: { main:'#E74C3C', blue:'#3498DB', yellow:'#F1C40F', green:'#2ECC71' },
-  designBooks: { main:'#8B6914', cover1:'#E74C3C', cover2:'#3498DB', cover3:'#9B59B6' },
-  polaroidWall: { main:'#FFFFFF', border:'#F5F0E6', photo:'#FFE4B5' },
-  incense: { main:'#8B7355', holder:'#2A2520', glow:'#FF6B35', smoke:'#AAAAAA' }
-};
-
-function drawMedals(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.medals;
-  const s = 2; // Scale
-  // Gold glow effect
-  c.fillStyle = 'rgba(255, 215, 0, 0.2)';
-  c.fillRect(x-2, y-2, 32, 20);
-  // Ribbon
-  rect(c, x+12, y, 8, 6, p.ribbon);
-  rect(c, x+14, y+2, 4, 2, p.dark);
-  // Medal circles
-  rect(c, x+4, y+6, 8, 8, p.main);
-  rect(c, x+6, y+8, 4, 4, p.shine);
-  rect(c, x+20, y+6, 8, 8, p.main);
-  rect(c, x+22, y+8, 4, 4, p.shine);
-  // Bottom medals (smaller)
-  rect(c, x+8, y+14, 6, 6, p.dark);
-  rect(c, x+18, y+14, 6, 6, p.dark);
-}
-
-function drawTacticalMap(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.tacticalMap;
-  // Amber glow
-  c.fillStyle = 'rgba(255, 170, 0, 0.15)';
-  c.fillRect(x-2, y-2, 52, 38);
-  // Map background
-  rect(c, x, y, 48, 32, p.dark);
-  // Grid lines
-  for (let i = 0; i < 48; i += 8) {
-    rect(c, x+i, y, 1, 32, p.lines);
-  }
-  for (let j = 0; j < 32; j += 8) {
-    rect(c, x, y+j, 48, 1, p.lines);
-  }
-  // Map markers
-  rect(c, x+16, y+12, 4, 4, p.pin);
-  rect(c, x+32, y+20, 4, 4, p.pin);
-  rect(c, x+8, y+24, 3, 3, p.main);
-  rect(c, x+40, y+8, 3, 3, p.main);
-  // Border
-  rect(c, x, y, 48, 1, p.main);
-  rect(c, x, y+31, 48, 1, p.main);
-  rect(c, x, y, 1, 32, p.main);
-  rect(c, x+47, y, 1, 32, p.main);
-}
-
-function drawSecurePhone(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.securePhone;
-  // Cyan glow effect
-  c.fillStyle = 'rgba(0, 212, 255, 0.25)';
-  c.fillRect(x-2, y-2, 20, 28);
-  // Phone body
-  rect(c, x, y, 16, 24, p.dark);
-  // Screen
-  rect(c, x+2, y+2, 12, 14, p.screen);
-  // Screen glow lines
-  rect(c, x+3, y+4, 10, 1, p.glow);
-  rect(c, x+3, y+7, 8, 1, p.glow);
-  rect(c, x+3, y+10, 10, 1, p.glow);
-  // Keypad
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
-      rect(c, x+2+j*4, y+18+i*3, 3, 2, p.main);
-    }
-  }
-  // Antenna
-  rect(c, x+6, y-4, 2, 4, p.main);
-  rect(c, x+5, y-5, 4, 1, p.main);
-}
-
-function drawFamilyPhoto(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.familyPhoto;
-  // Warm white glow
-  c.fillStyle = 'rgba(245, 240, 230, 0.15)';
-  c.fillRect(x-1, y-1, 22, 26);
-  // Frame
-  rect(c, x, y, 20, 24, p.frame);
-  // Photo background (warm)
-  rect(c, x+2, y+2, 16, 16, p.photo);
-  // Silhouettes
-  rect(c, x+6, y+10, 4, 6, p.dark);
-  rect(c, x+5, y+12, 2, 4, p.dark);
-  rect(c, x+10, y+10, 4, 6, p.dark);
-  rect(c, x+11, y+12, 2, 4, p.dark);
-  // Child silhouette
-  rect(c, x+8, y+14, 3, 4, p.dark);
-}
-
-function drawServerArray(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.serverArray;
-  // Cyan glow
-  c.fillStyle = 'rgba(0, 212, 255, 0.15)';
-  c.fillRect(x-1, y-1, 18, 36);
-  // Server rack
-  rect(c, x, y, 16, 34, p.dark);
-  // Server units with LEDs
-  for (let i = 0; i < 5; i++) {
-    rect(c, x+2, y+2+i*6, 12, 4, '#1A1A2A');
-    rect(c, x+3, y+3+i*6, 3, 2, p.led);
-    rect(c, x+8, y+4+i*6, 4, 1, i % 2 === 0 ? p.main : p.light);
-  }
-}
-
-function drawRetroConsole(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.retroConsole;
-  // Subtle glow
-  c.fillStyle = 'rgba(0, 255, 0, 0.1)';
-  c.fillRect(x-1, y-1, 28, 14);
-  // Console body
-  rect(c, x, y, 26, 12, p.dark);
-  // Cartridge slot
-  rect(c, x+8, y-2, 10, 3, p.light);
-  // Power LED
-  rect(c, x+3, y+4, 2, 2, p.led);
-  // Controller ports
-  rect(c, x+18, y+6, 6, 2, '#1A1A1A');
-}
-
-function drawCoffeeMug(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.coffeeMug;
-  // Warm glow
-  c.fillStyle = 'rgba(139, 105, 20, 0.15)';
-  c.fillRect(x-1, y-1, 14, 18);
-  // Mug body
-  rect(c, x, y, 10, 14, p.main);
-  rect(c, x+10, y+2, 3, 8, p.main);
-  // Coffee inside
-  rect(c, x+1, y+1, 8, 2, '#3D2817');
-  // Steam
-  rect(c, x+2, y-3, 1, 3, p.steam);
-  rect(c, x+6, y-4, 1, 3, p.steam);
-}
-
-function drawCatPhoto(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.catPhoto;
-  // Warm glow
-  c.fillStyle = 'rgba(245, 240, 230, 0.15)';
-  c.fillRect(x-1, y-1, 20, 24);
-  // Frame
-  rect(c, x, y, 18, 22, p.frame);
-  // Photo
-  rect(c, x+2, y+2, 14, 14, '#FFE4C4');
-  // Cat silhouette (ears)
-  rect(c, x+6, y+6, 2, 2, p.dark);
-  rect(c, x+10, y+6, 2, 2, p.dark);
-  rect(c, x+5, y+8, 8, 4, p.dark);
-  // Eyes
-  rect(c, x+7, y+10, 1, 1, p.main);
-  rect(c, x+10, y+10, 1, 1, p.main);
-}
-
-function drawWorldMap(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.worldMap;
-  // Amber glow
-  c.fillStyle = 'rgba(255, 170, 0, 0.12)';
-  c.fillRect(x-2, y-2, 44, 30);
-  // Map background (ocean)
-  rect(c, x, y, 40, 26, p.ocean);
-  // Continents (simplified)
-  rect(c, x+4, y+6, 10, 8, p.land);
-  rect(c, x+18, y+4, 12, 10, p.land);
-  rect(c, x+6, y+16, 8, 6, p.land);
-  rect(c, x+28, y+8, 8, 10, p.land);
-  // Grid lines
-  rect(c, x+20, y+2, 1, 22, p.lines);
-  rect(c, x+2, y+13, 36, 1, p.lines);
-  // Border
-  rect(c, x, y, 40, 1, p.main);
-  rect(c, x, y+25, 40, 1, p.main);
-  rect(c, x, y, 1, 26, p.main);
-  rect(c, x+39, y, 1, 26, p.main);
-}
-
-function drawJournal(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.journal;
-  // Warm brown glow
-  c.fillStyle = 'rgba(139, 105, 20, 0.15)';
-  c.fillRect(x-1, y-1, 18, 22);
-  // Book cover
-  rect(c, x, y, 16, 20, p.main);
-  // Spine
-  rect(c, x, y, 3, 20, p.dark);
-  // Pages
-  rect(c, x+3, y+2, 12, 16, p.pages);
-  // Lines on page
-  rect(c, x+5, y+5, 8, 1, '#CCCCCC');
-  rect(c, x+5, y+8, 8, 1, '#CCCCCC');
-  rect(c, x+5, y+11, 6, 1, '#CCCCCC');
-  // Leather strap
-  rect(c, x+10, y-1, 2, 3, p.strap);
-}
-
-function drawDiploma(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.diploma;
-  // Warm glow
-  c.fillStyle = 'rgba(245, 240, 230, 0.15)';
-  c.fillRect(x-1, y-1, 30, 22);
-  // Document
-  rect(c, x, y, 28, 20, p.main);
-  // Frame corners
-  rect(c, x+2, y+2, 4, 4, p.frame);
-  rect(c, x+22, y+2, 4, 4, p.frame);
-  rect(c, x+2, y+14, 4, 4, p.frame);
-  rect(c, x+22, y+14, 4, 4, p.frame);
-  // Text lines
-  rect(c, x+6, y+6, 16, 1, p.dark);
-  rect(c, x+4, y+9, 20, 1, p.dark);
-  rect(c, x+8, y+11, 12, 1, p.dark);
-  // Seal
-  rect(c, x+22, y+14, 4, 4, p.seal);
-}
-
-function drawFabricSwatches(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.fabricSwatches;
-  // Subtle warm glow
-  c.fillStyle = 'rgba(255, 255, 255, 0.1)';
-  c.fillRect(x-1, y-1, 30, 24);
-  // Swatches pinned to cork/board
-  rect(c, x+2, y+4, 8, 8, p.main);
-  rect(c, x+11, y+2, 8, 10, p.blue);
-  rect(c, x+20, y+4, 8, 8, p.yellow);
-  rect(c, x+6, y+13, 8, 8, p.green);
-  rect(c, x+15, y+14, 8, 8, p.main);
-  // Pins
-  rect(c, x+5, y+2, 1, 2, '#666666');
-  rect(c, x+14, y, 1, 2, '#666666');
-  rect(c, x+23, y+2, 1, 2, '#666666');
-  rect(c, x+9, y+11, 1, 2, '#666666');
-}
-
-function drawDesignBooks(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.designBooks;
-  // Warm glow
-  c.fillStyle = 'rgba(139, 105, 20, 0.12)';
-  c.fillRect(x-1, y-1, 28, 34);
-  // Stacked books
-  rect(c, x, y+20, 26, 12, p.main); // Bottom
-  rect(c, x+1, y+21, 24, 10, p.dark);
-  rect(c, x+2, y+8, 24, 12, p.cover1); // Middle
-  rect(c, x+3, y+9, 22, 10, '#C0392B');
-  rect(c, x+4, y-2, 20, 10, p.cover2); // Top
-  rect(c, x+5, y-1, 18, 8, '#2980B9');
-  // Page edges
-  rect(c, x+26, y+9, 2, 11, '#F5F0E6');
-  rect(c, x+24, y+21, 2, 10, '#F5F0E6');
-}
-
-function drawPolaroidWall(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.polaroidWall;
-  // Warm glow
-  c.fillStyle = 'rgba(255, 255, 255, 0.12)';
-  c.fillRect(x-1, y-1, 36, 28);
-  // Polaroids scattered
-  rect(c, x, y, 14, 16, p.border);
-  rect(c, x+2, y+2, 10, 10, p.photo);
-  rect(c, x+18, y+4, 12, 14, p.border);
-  rect(c, x+20, y+6, 8, 8, p.photo);
-  rect(c, x+4, y+14, 10, 12, p.border);
-  rect(c, x+6, y+16, 6, 8, p.photo);
-}
-
-function drawIncense(c, x, y) {
-  const p = QUARTER_ITEM_PALETTES.incense;
-  // Warm orange glow
-  c.fillStyle = 'rgba(255, 107, 53, 0.15)';
-  c.fillRect(x-1, y-1, 12, 28);
-  // Holder
-  rect(c, x+2, y+16, 8, 10, p.holder);
-  // Stick
-  rect(c, x+5, y+4, 2, 14, '#D4A574');
-  // Glowing tip
-  rect(c, x+5, y+2, 2, 2, p.glow);
-  // Smoke
-  rect(c, x+4, y-4, 1, 6, p.smoke);
-  rect(c, x+7, y-3, 1, 5, p.smoke);
-}
-
-// ===== QUARTER ITEM DRAWING FUNCTION =====
-function drawQuarterItem(c, itemType, x, y) {
-  switch(itemType) {
-    case 'medals': drawMedals(c, x, y); break;
-    case 'tacticalMap': drawTacticalMap(c, x, y); break;
-    case 'securePhone': drawSecurePhone(c, x, y); break;
-    case 'familyPhoto': drawFamilyPhoto(c, x, y); break;
-    case 'serverArray': drawServerArray(c, x, y); break;
-    case 'retroConsole': drawRetroConsole(c, x, y); break;
-    case 'coffeeMug': drawCoffeeMug(c, x, y); break;
-    case 'catPhoto': drawCatPhoto(c, x, y); break;
-    case 'worldMap': drawWorldMap(c, x, y); break;
-    case 'journal': drawJournal(c, x, y); break;
-    case 'diploma': drawDiploma(c, x, y); break;
-    case 'fabricSwatches': drawFabricSwatches(c, x, y); break;
-    case 'designBooks': drawDesignBooks(c, x, y); break;
-    case 'polaroidWall': drawPolaroidWall(c, x, y); break;
-    case 'incense': drawIncense(c, x, y); break;
-  }
-}
-
-// Track quarter item positions for hover detection
-let quarterItemPositions = [];
-
-function getQuarterItemTooltip(itemType) {
-  const tooltips = {
-    medals: 'Service Medals',
-    tacticalMap: 'Tactical Deployment Map',
-    securePhone: 'Secure Communication Phone',
-    familyPhoto: 'Family Photograph',
-    serverArray: 'Server Array',
-    retroConsole: 'Retro Gaming Console',
-    coffeeMug: 'Coffee Mug',
-    catPhoto: 'Mittens the Cat',
-    worldMap: 'World Map',
-    journal: 'Personal Journal',
-    diploma: 'Engineering Diploma',
-    fabricSwatches: 'Fabric Design Swatches',
-    designBooks: 'Design Reference Books',
-    polaroidWall: 'Polaroid Photo Wall',
-    incense: 'Incense Holder'
-  };
-  return tooltips[itemType] || itemType;
-}
-
-// Get glow color based on item category (Vera's design palette)
-function getItemGlowColor(itemType) {
-  const glows = {
-    medals: 'rgba(255, 215, 0, 0.5)',        // Gold
-    tacticalMap: 'rgba(255, 170, 0, 0.4)',    // Amber
-    securePhone: 'rgba(0, 212, 255, 0.5)',    // Cyan
-    familyPhoto: 'rgba(245, 240, 230, 0.4)',  // Warm white
-    serverArray: 'rgba(0, 212, 255, 0.4)',    // Cyan
-    retroConsole: 'rgba(0, 255, 0, 0.3)',     // Green
-    coffeeMug: 'rgba(139, 105, 20, 0.4)',     // Brown
-    catPhoto: 'rgba(245, 240, 230, 0.4)',     // Warm white
-    worldMap: 'rgba(255, 170, 0, 0.4)',       // Amber
-    journal: 'rgba(139, 105, 20, 0.4)',       // Brown/Tan
-    diploma: 'rgba(255, 215, 0, 0.4)',        // Gold
-    fabricSwatches: 'rgba(245, 240, 230, 0.3)', // Warm white
-    designBooks: 'rgba(139, 105, 20, 0.35)',  // Brown/Tan
-    polaroidWall: 'rgba(245, 240, 230, 0.35)', // Warm white
-    incense: 'rgba(255, 107, 53, 0.4)'       // Orange
-  };
-  return glows[itemType] || 'rgba(255, 215, 0, 0.3)';
-}
-
-function getItemTextColor(itemType) {
-  const colors = {
-    medals: '#FFD700', tacticalMap: '#FFAA00', securePhone: '#00D4FF',
-    familyPhoto: '#F5F0E6', serverArray: '#00D4FF', retroConsole: '#00FF00',
-    coffeeMug: '#D4A574', catPhoto: '#F5F0E6', worldMap: '#FFAA00',
-    journal: '#D4A574', diploma: '#FFD700', fabricSwatches: '#F5F0E6',
-    designBooks: '#D4A574', polaroidWall: '#F5F0E6', incense: '#FF6B35'
-  };
-  return colors[itemType] || '#FFD700';
-}
-
-function drawQuarterItemTooltip(c) {
-  if (!hoveredQuarterItem) return;
-  const item = hoveredQuarterItem;
-  const label = getQuarterItemTooltip(item.item);
-  const textColor = getItemTextColor(item.item);
-  const glowColor = getItemGlowColor(item.item);
-  
-  c.font = 'bold 8px "JetBrains Mono"';
-  const textW = c.measureText(label).width;
-  const padX = 8, padY = 4;
-  const tooltipW = textW + padX * 2;
-  const tooltipH = 16;
-  
-  // Position tooltip above the item, centered
-  let tx = item.x + item.width / 2 - tooltipW / 2;
-  let ty = item.y - tooltipH - 6;
-  
-  // Clamp to canvas bounds
-  if (tx < 4) tx = 4;
-  if (tx + tooltipW > TARGET_WIDTH - 4) tx = TARGET_WIDTH - tooltipW - 4;
-  if (ty < 4) ty = item.y + item.height + 4; // flip below if too high
-  
-  // Warm glow outline around hovered item
-  c.save();
-  c.shadowColor = glowColor;
-  c.shadowBlur = 8;
-  c.strokeStyle = textColor;
-  c.lineWidth = 1;
-  c.strokeRect(item.x - 2, item.y - 2, item.width + 4, item.height + 4);
-  c.restore();
-  
-  // Tooltip background (dark with warm tint)
-  c.fillStyle = 'rgba(20, 16, 10, 0.92)';
-  c.beginPath();
-  c.roundRect(tx, ty, tooltipW, tooltipH, 4);
-  c.fill();
-  
-  // Tooltip border with item glow color
-  c.strokeStyle = textColor;
-  c.globalAlpha = 0.6;
-  c.lineWidth = 1;
-  c.beginPath();
-  c.roundRect(tx, ty, tooltipW, tooltipH, 4);
-  c.stroke();
-  c.globalAlpha = 1;
-  
-  // Tooltip text
-  c.fillStyle = textColor;
-  c.font = 'bold 8px "JetBrains Mono"';
-  c.textAlign = 'left';
-  c.textBaseline = 'middle';
-  c.fillText(label, tx + padX, ty + tooltipH / 2);
-  c.textBaseline = 'alphabetic'; // reset
-}
-
-// Vera's quarters furniture
-function drawDesignDesk(c, x, y) {
-  // Design desk - larger than regular desk, with drafting surface
-  rect(c, x, y, 90, 22, '#5C4A38');
-  rect(c, x, y+22, 90, 3, '#4A3728');
-  // Legs
-  rect(c, x+4, y+25, 4, 10, '#3A2A1C');
-  rect(c, x+82, y+25, 4, 10, '#3A2A1C');
-  // Drafting surface (lighter wood tone)
-  rect(c, x+6, y+4, 78, 14, '#C4A77D');
-  // Ruler on desk
-  rect(c, x+10, y+6, 40, 2, '#A08060');
-  // Color swatches (small colored squares)
-  rect(c, x+56, y+8, 6, 6, '#E74C3C');
-  rect(c, x+64, y+8, 6, 6, '#3498DB');
-  rect(c, x+72, y+8, 6, 6, '#F1C40F');
-}
-
-function drawMoodBoard(c, x, y) {
-  // Cork/mood board on wall
-  rect(c, x, y, 70, 50, '#8D6E63');
-  rect(c, x+2, y+2, 66, 46, '#A1887F');
-  // Various inspiration images/fabric swatches
-  rect(c, x+6, y+6, 20, 15, '#E8DCC8'); // beige swatch
-  rect(c, x+28, y+6, 18, 12, '#D4A574'); // warm tone
-  rect(c, x+50, y+8, 14, 18, '#5C4A38'); // dark wood
-  rect(c, x+8, y+24, 16, 14, '#4CAF50'); // green accent
-  rect(c, x+26, y+22, 20, 16, '#3F51B5'); // blue accent
-  // Push pins
-  rect(c, x+14, y+8, 2, 2, '#CC3333');
-  rect(c, x+35, y+10, 2, 2, '#CC3333');
-  rect(c, x+56, y+14, 2, 2, '#CC3333');
-}
-
-function drawArtSupplies(c, x, y) {
-  // Paint/pencil holder
-  rect(c, x+4, y+10, 12, 14, '#8D6E63');
-  // Brushes/pencils sticking out
-  rect(c, x+6, y+2, 2, 10, '#D4A574');
-  rect(c, x+9, y, 2, 12, '#4CAF50');
-  rect(c, x+12, y+3, 2, 9, '#2196F3');
-  // Palette
-  rect(c, x+20, y+8, 16, 12, '#D4A574');
-  rect(c, x+24, y+10, 4, 4, '#E74C3C');
-  rect(c, x+30, y+11, 3, 3, '#F1C40F');
-}
-
 function drawRug(c, x, y, w, h, color) {
   rect(c, x, y, w, h, color);
   strokeRect(c, x, y, w, h, 'rgba(0,0,0,0.2)');
@@ -1648,8 +1088,6 @@ function drawPod(c, pod, agent) {
       if (agent.deskItems.includes('clipboard')) drawClipboard(c, x+w-42, y+8);
       if (agent.deskItems.includes('rubberDuck')) drawRubberDuck(c, x+28, y+8);
       if (agent.deskItems.includes('energyDrink')) drawEnergyDrink(c, x+w-38, y+6);
-      if (agent.deskItems.includes('succulent')) drawSucculent(c, x+24, y+6);
-      if (agent.deskItems.includes('sketchbook')) drawSketchbook(c, x+w-42, y+8);
     }
   } else {
     const vacX = x + 40;
@@ -1770,16 +1208,16 @@ function renderLounge(c) {
   // Bean bags
   drawBeanBag(c, x+180, y+120, C.bean1);
   drawBeanBag(c, x+220, y+150, C.bean2);
-  // Ping pong table (compact placement within walls)
-  drawPingPong(c, x+320, y+60);
+  // Ping pong table
+  drawPingPong(c, x+120, y+220);
   // Plants
-  drawPlant(c, x+260, y+40, 1.2);
-  drawPlant(c, x+680, y+130, 1);
-  drawPlant(c, x+720, y+40, 0.8);
+  drawPlant(c, x+260, y+40, 1.5);
+  drawPlant(c, x+280, y+280, 1.2);
+  drawPlant(c, x+20, y+300, 1);
   // Rec sign
   c.fillStyle = C.hdrDim;
   c.font = '7px "JetBrains Mono"';
-  c.fillText('🎯 REC ZONE', x+320, y+50);
+  c.fillText('🎯 REC ZONE', x+120, y+210);
 }
 
 function drawQuarter(c, quarter) {
@@ -1799,120 +1237,24 @@ function drawQuarter(c, quarter) {
 
   drawRug(c, x+18, y+h-36, w-36, 20, 'rgba(90,110,130,0.2)');
 
-  // Get agent's quarters items
-  const agentData = AGENTS.find(a => a.name === agent);
-  const items = agentData?.quartersItems || [];
-
   switch (agent) {
     case 'Flint':
       drawBed(c, x+18, y+28, 88, 'left');
       drawDogBed(c, x+w-60, y+70);
       drawWhiteboard(c, x+w-96, y+24);
       drawPlant(c, x+30, y+h-60, 0.8);
-      // Quarters items - Flint
-      // Medals: wall mounted above bed (on wall strip)
-      if (items.includes('medals')) {
-        drawQuarterItem(c, 'medals', x+50, y+12);
-        quarterItemPositions.push({ x: x+50, y: y+12, width: 28, height: 18, item: 'medals', quarterAgent: agent });
-      }
-      // Tactical map: on wall (above whiteboard area)
-      if (items.includes('tacticalMap')) {
-        drawQuarterItem(c, 'tacticalMap', x+w-92, y+58);
-        quarterItemPositions.push({ x: x+w-92, y: y+58, width: 48, height: 32, item: 'tacticalMap', quarterAgent: agent });
-      }
-      // Secure phone: on nightstand (right side of bed)
-      if (items.includes('securePhone')) {
-        drawQuarterItem(c, 'securePhone', x+w-52, y+66);
-        quarterItemPositions.push({ x: x+w-52, y: y+66, width: 16, height: 24, item: 'securePhone', quarterAgent: agent });
-      }
-      // Family photo: on wall near bed
-      if (items.includes('familyPhoto')) {
-        drawQuarterItem(c, 'familyPhoto', x+18, y+72);
-        quarterItemPositions.push({ x: x+18, y: y+72, width: 18, height: 22, item: 'familyPhoto', quarterAgent: agent });
-      }
       break;
     case 'Cipher':
       drawBed(c, x+w-110, y+28, 90, 'right');
       drawServerRack(c, x+24, y+32);
       drawMiniFridge(c, x+22, y+78);
       drawEnergyDrink(c, x+60, y+78);
-      // Quarters items - Cipher
-      // Server array: on the wall (where server rack is)
-      if (items.includes('serverArray')) {
-        drawQuarterItem(c, 'serverArray', x+26, y+36);
-        quarterItemPositions.push({ x: x+26, y: y+36, width: 16, height: 34, item: 'serverArray', quarterAgent: agent });
-      }
-      // Retro console: on mini fridge
-      if (items.includes('retroConsole')) {
-        drawQuarterItem(c, 'retroConsole', x+22, y+112);
-        quarterItemPositions.push({ x: x+22, y: y+112, width: 26, height: 12, item: 'retroConsole', quarterAgent: agent });
-      }
-      // Coffee mug: on nightstand
-      if (items.includes('coffeeMug')) {
-        drawQuarterItem(c, 'coffeeMug', x+w-40, y+76);
-        quarterItemPositions.push({ x: x+w-40, y: y+76, width: 12, height: 16, item: 'coffeeMug', quarterAgent: agent });
-      }
-      // Cat photo: on wall above bed
-      if (items.includes('catPhoto')) {
-        drawQuarterItem(c, 'catPhoto', x+w-48, y+32);
-        quarterItemPositions.push({ x: x+w-48, y: y+32, width: 18, height: 22, item: 'catPhoto', quarterAgent: agent });
-      }
       break;
     case 'Atlas':
       drawBed(c, x+26, y+32, 88, 'left');
       drawBlueprintDesk(c, x+110, y+80);
       drawBookshelf(c, x+w-70, y+22, 56);
       drawPlant(c, x+90, y+28, 0.7);
-      // Quarters items - Atlas
-      // Medals: on wall near bookshelf
-      if (items.includes('medals')) {
-        drawQuarterItem(c, 'medals', x+90, y+12);
-        quarterItemPositions.push({ x: x+90, y: y+12, width: 28, height: 18, item: 'medals', quarterAgent: agent });
-      }
-      // World map: on wall above bed
-      if (items.includes('worldMap')) {
-        drawQuarterItem(c, 'worldMap', x+40, y+12);
-        quarterItemPositions.push({ x: x+40, y: y+12, width: 40, height: 26, item: 'worldMap', quarterAgent: agent });
-      }
-      // Journal: on desk
-      if (items.includes('journal')) {
-        drawQuarterItem(c, 'journal', x+112, y+90);
-        quarterItemPositions.push({ x: x+112, y: y+90, width: 16, height: 20, item: 'journal', quarterAgent: agent });
-      }
-      // Diploma: on wall above bookshelf
-      if (items.includes('diploma')) {
-        drawQuarterItem(c, 'diploma', x+w-66, y+62);
-        quarterItemPositions.push({ x: x+w-66, y: y+62, width: 28, height: 20, item: 'diploma', quarterAgent: agent });
-      }
-      break;
-    case 'Vera':
-      drawBed(c, x+18, y+28, 88, 'left');
-      drawDesignDesk(c, x+110, y+76);
-      drawMoodBoard(c, x+w-80, y+22);
-      drawArtSupplies(c, x+24, y+80);
-      drawSucculent(c, x+30, y+70);
-      drawPlant(c, x+w-50, y+h-50, 0.9);
-      // Quarters items - Vera
-      // Fabric swatches: on mood board area
-      if (items.includes('fabricSwatches')) {
-        drawQuarterItem(c, 'fabricSwatches', x+w-76, y+26);
-        quarterItemPositions.push({ x: x+w-76, y: y+26, width: 28, height: 22, item: 'fabricSwatches', quarterAgent: agent });
-      }
-      // Design books: on desk
-      if (items.includes('designBooks')) {
-        drawQuarterItem(c, 'designBooks', x+112, y+80);
-        quarterItemPositions.push({ x: x+112, y: y+80, width: 26, height: 32, item: 'designBooks', quarterAgent: agent });
-      }
-      // Polaroid wall: on wall above bed
-      if (items.includes('polaroidWall')) {
-        drawQuarterItem(c, 'polaroidWall', x+22, y+32);
-        quarterItemPositions.push({ x: x+22, y: y+32, width: 34, height: 26, item: 'polaroidWall', quarterAgent: agent });
-      }
-      // Incense: on design desk
-      if (items.includes('incense')) {
-        drawQuarterItem(c, 'incense', x+202, y+72);
-        quarterItemPositions.push({ x: x+202, y: y+72, width: 10, height: 26, item: 'incense', quarterAgent: agent });
-      }
       break;
   }
 }
@@ -1928,7 +1270,6 @@ function drawStairs(c, x, y) {
 }
 
 function renderQuarters(c) {
-  quarterItemPositions = []; // Reset each frame
   QUARTERS.forEach(q => drawQuarter(c, q));
 }
 function drawQuartersOverlay(ctx) {
@@ -1950,16 +1291,32 @@ function drawQuartersOverlay(ctx) {
 
 
 // ===== STATIC BACKGROUND =====
+function paintBase(ctx, floorLabel) {
+  rect(ctx, 0, 0, TARGET_WIDTH, TARGET_HEIGHT, C.bg);
+  rect(ctx, 0, 0, TARGET_WIDTH, HDR_H, C.hdrBg);
+  rect(ctx, 0, HDR_H-1, TARGET_WIDTH, 1, C.hdrBorder);
+  ctx.fillStyle = C.hdrText;
+  ctx.font = 'bold 11px "JetBrains Mono"';
+  ctx.fillText('◆ 87 HIGHLAND LANE', 16, 19);
+  ctx.fillStyle = C.hdrDim;
+  ctx.font = '10px "JetBrains Mono"';
+  ctx.fillText('SECURE OPS CENTER', 230, 19);
+  ctx.textAlign = 'right';
+  ctx.fillText(floorLabel, TARGET_WIDTH - 16, 19);
+  ctx.textAlign = 'left';
+  rect(ctx, 0, BAR_Y, TARGET_WIDTH, BAR_H, C.barBg);
+  rect(ctx, 0, BAR_Y, TARGET_WIDTH, 1, C.barBorder);
+  rect(ctx, 0, BAR_Y+1, TARGET_WIDTH, 1, C.barBorder);
+}
+
 function renderOpsCorridors(c) {
-  // Corridor between rooms row 2 and pods
-  drawFloor(c, 10, ROOM_Y + ROOM_H*2 + ROOM_GAP, 780, POD_Y - (ROOM_Y + ROOM_H*2 + ROOM_GAP));
-  // Corridor below pods (to lounge)
-  drawFloor(c, 10, POD_Y + POD_H, 780, LOUNGE_Y - POD_Y - POD_H);
-  // Corridor below lounge (to floor separator)
-  drawFloor(c, 10, LOUNGE_Y + LOUNGE_H, 780, FLOOR_SEP_Y - LOUNGE_Y - LOUNGE_H);
-  // Walkway in quarters area
-  drawFloor(c, 10, FLOOR2_Y - 8, 760, 12);
-  drawFloor(c, 10, FLOOR2_Y + QUARTER_H, 760, BAR_Y - FLOOR2_Y - QUARTER_H);
+  // Horizontal corridor between rooms and pods
+  drawFloor(c, 10, ROOM_Y + ROOM_H*2 + ROOM_GAP, 780, 20);
+  // Vertical corridor on right side
+  drawFloor(c, 742, ROOM_Y, 28, POD_Y + POD_H - ROOM_Y);
+  // Walkway from stairs down to quarters
+  drawFloor(c, 10, FLOOR2_Y - 8, 750, 12);
+  drawFloor(c, 742, FLOOR2_Y - 8, 28, QUARTER_H + 24);
 }
 
 function renderBackground() {
@@ -2001,8 +1358,8 @@ function renderBackground() {
 
   // ── FLOOR 2: QUARTERS ──
   renderQuarters(bg);
-  drawPlant(bg, 60, FLOOR2_Y+20, 1);
-  drawPlant(bg, 720, FLOOR2_Y+40, 1.2);
+  drawPlant(bg, 60, QUARTER_Y+20, 1);
+  drawPlant(bg, 720, QUARTER_Y+40, 1.2);
 
   // Bottom bar
   rect(bg, 0, BAR_Y, TARGET_WIDTH, BAR_H, C.barBg);
@@ -2173,81 +1530,6 @@ const CIPHER_SIT = [
   '.jJBBJj.',
 ];
 
-// ===== VERA SPRITES (Interior Designer - warm wood tones) =====
-const VERA_PAL = {
-  H:C.vHair, S:C.vSkin, s:C.vSkinS, E:C.vEye,
-  J:C.vJacket, j:C.vJacketD, O:C.vAccent,
-  B:C.vBelt, P:C.vPants, b:C.vBoots,
-};
-const VERA_STAND = [
-  '..HHHH..',
-  '.HHHHHH.',
-  '.HSSSSH.',
-  '.SEESSE.',
-  '.SSssSS.',
-  '..SssS..',
-  '..SSSS..',
-  '.jJJJJj.',
-  '.JJJJJJ.',
-  '.JOOJOJ.',
-  '.JJJJJJ.',
-  '.jJBBJj.',
-  '..PPPP..',
-  '..PPPP..',
-  '..PP.PP.',
-  '..bb.bb.',
-];
-const VERA_WALK1 = [
-  '..HHHH..',
-  '.HHHHHH.',
-  '.HSSSSH.',
-  '.SEESSE.',
-  '.SSssSS.',
-  '..SssS..',
-  '..SSSS..',
-  '.jJJJJj.',
-  '.JJJJJJ.',
-  '.JOOJOJ.',
-  '.JJJJJJ.',
-  '.jJBBJj.',
-  '..PPPP..',
-  '.PP..PP.',
-  'PP....PP',
-  'bb....bb',
-];
-const VERA_WALK2 = [
-  '..HHHH..',
-  '.HHHHHH.',
-  '.HSSSSH.',
-  '.SEESSE.',
-  '.SSssSS.',
-  '..SssS..',
-  '..SSSS..',
-  '.jJJJJj.',
-  '.JJJJJJ.',
-  '.JOOJOJ.',
-  '.JJJJJJ.',
-  '.jJBBJj.',
-  '..PPPP..',
-  '..PP.PP.',
-  '.PP..PP.',
-  'bb....bb',
-];
-const VERA_SIT = [
-  '..HHHH..',
-  '.HHHHHH.',
-  '.HSSSSH.',
-  '.SEESSE.',
-  '.SSssSS.',
-  '..SssS..',
-  '..SSSS..',
-  '.jJJJJj.',
-  '.JJJJJJ.',
-  '.JOOJOJ.',
-  '.JJJJJJ.',
-  '.jJBBJj.',
-];
-
 // ===== LUCKY SPRITES =====
 const LUCKY_PAL = {
   W:C.lW, B:C.lB, n:C.lNose, t:C.lTongue,
@@ -2293,22 +1575,11 @@ const LUCKY_WALK2 = [
 class AgentEntity {
   constructor(cfg) {
     Object.assign(this, cfg);
-    // Handle custom desk positions for agents without podIndex
-    if (cfg.podIndex !== null && cfg.podIndex !== undefined) {
-      this.pod = PODS[cfg.podIndex];
-      const dc = deskCenter(this.pod);
-      this.deskPos = { x: dc.x - 12, y: dc.y - 20 };
-    } else if (CUSTOM_DESK_POSITIONS[cfg.name]) {
-      const customPos = CUSTOM_DESK_POSITIONS[cfg.name];
-      this.deskPos = { x: customPos.x - 12, y: customPos.y - 20 };
-    } else {
-      // Fallback to first pod if no position defined
-      this.pod = PODS[0];
-      const dc = deskCenter(this.pod);
-      this.deskPos = { x: dc.x - 12, y: dc.y - 20 };
-    }
-    this.x = this.deskPos.x;
-    this.y = this.deskPos.y + 40;
+    this.pod = PODS[cfg.podIndex];
+    const dc = deskCenter(this.pod);
+    this.deskPos = { x: dc.x - 12, y: dc.y - 20 };
+    this.x = dc.x - 12;
+    this.y = dc.y + 20;
     this.state = 'walking_to_desk';
     this.target = { ...this.deskPos };
     this.frame = 0;
@@ -2347,9 +1618,6 @@ class AgentEntity {
   getSprites() {
     if (this.name === 'Cipher' || this.name === 'Atlas') {
       return { pal: CIPHER_PAL, stand: CIPHER_STAND, walk1: CIPHER_WALK1, walk2: CIPHER_WALK2, sit: CIPHER_SIT };
-    }
-    if (this.name === 'Vera') {
-      return { pal: VERA_PAL, stand: VERA_STAND, walk1: VERA_WALK1, walk2: VERA_WALK2, sit: VERA_SIT };
     }
     return { pal: FLINT_PAL, stand: FLINT_STAND, walk1: FLINT_WALK1, walk2: FLINT_WALK2, sit: FLINT_SIT };
   }
@@ -2845,8 +2113,7 @@ function drawDesktopStatusBar() {
   const tabs = [
     { id: 'agents', label: 'AGENTS' },
     { id: 'todos', label: 'TO-DO' },
-    { id: 'activity', label: 'ACTIVITY' },
-    { id: 'models', label: 'MODELS' }
+    { id: 'activity', label: 'ACTIVITY' }
   ];
   
   // Draw tabs
@@ -2881,7 +2148,7 @@ function drawDesktopStatusBar() {
   });
 
   // Modal button (expand to fullscreen) — next to tabs
-  const modalBtnX = 320;
+  const modalBtnX = 250;
   const modalBtnW = 70;
   const modalBtnH = TAB_H;
   ctx.fillStyle = modalOpen ? '#2A4A6A' : '#0D1520';
@@ -2909,15 +2176,14 @@ function drawDesktopStatusBar() {
   if (statusTab === 'agents') {
     // Existing agent cards code starts here...
 
-  // ── AGENT CARDS — dynamic layout based on agent count ──
+  // ── AGENT CARDS — single row, 3 cards side by side ──
   const CARD_PAD = 12;
+  const AGENT_COUNT = 3; // Fixed for 3 agents
   const COMPANION_W = 110;
   const RIGHT_MARGIN = COMPANION_W + CARD_PAD * 2;
   const AVAILABLE_W = TARGET_WIDTH - CARD_PAD * 2 - RIGHT_MARGIN;
-  const CARD_GAP = 8;
-  const agentCount = entities.length;
-  // Dynamic card width: fit all agents in one row with companion panel
-  const CARD_W = Math.min(210, Math.floor((AVAILABLE_W - (agentCount - 1) * CARD_GAP) / agentCount));
+  const CARD_GAP = 10;
+  const CARD_W = 210; // Fixed: narrower to fit 3 agents + companion panel
   const CARD_H = 115;
   const CARD_Y = BAR_Y + 24;
 
@@ -2947,26 +2213,18 @@ function drawDesktopStatusBar() {
     strokeRect(ctx, x, y, CARD_W, CARD_H, '#1A2535');
 
     // ── Row 1: Name + Level badge ──
-    const innerX = x + 8;
-    const innerW = CARD_W - 16;
+    const innerX = x + 10;
+    const innerW = CARD_W - 20;
 
     ctx.fillStyle = ent.color;
     ctx.font = 'bold 10px "JetBrains Mono"';
-    // Truncate name if card is narrow
-    let displayName = ent.name;
-    if (ctx.measureText(displayName).width > innerW - 40) {
-      while (ctx.measureText(displayName + '…').width > innerW - 40 && displayName.length > 2) {
-        displayName = displayName.slice(0, -1);
-      }
-      displayName += '…';
-    }
-    ctx.fillText(displayName, innerX, y + 16);
+    ctx.fillText(ent.name, innerX, y + 16);
 
     // Level badge (right-aligned)
     const lvlText = `Lv${ent.level}`;
     ctx.font = 'bold 8px "JetBrains Mono"';
     const lvlW = ctx.measureText(lvlText).width + 8;
-    const lvlX = x + CARD_W - lvlW - 6;
+    const lvlX = x + CARD_W - lvlW - 8;
     ctx.fillStyle = '#1A2535';
     ctx.beginPath();
     ctx.roundRect(lvlX, y + 6, lvlW, 14, 3);
@@ -2977,17 +2235,10 @@ function drawDesktopStatusBar() {
     // ── Row 2: Role ──
     ctx.fillStyle = '#4A5A6A';
     ctx.font = '8px "JetBrains Mono"';
-    let displayRole = ent.role;
-    if (ctx.measureText(displayRole).width > innerW) {
-      while (ctx.measureText(displayRole + '…').width > innerW && displayRole.length > 2) {
-        displayRole = displayRole.slice(0, -1);
-      }
-      displayRole += '…';
-    }
-    ctx.fillText(displayRole, innerX, y + 30);
+    ctx.fillText(ent.role, innerX, y + 30);
 
-    // ── Row 3: Status indicator + model badge ──
-    const statusY = y + 42;
+    // ── Row 3: Status indicator ──
+    const statusY = y + 46;
     let dotColor = ent.status === 'meeting' ? C.amber : (ent.status === 'working' ? C.green : C.red);
     let statusText = ent.status.toUpperCase();
 
@@ -3007,46 +2258,8 @@ function drawDesktopStatusBar() {
     ctx.font = 'bold 9px "JetBrains Mono"';
     ctx.fillText(statusText, innerX + 14, statusY);
 
-    // Model badge (dynamically positioned after status text)
-    if (ent.currentModel && ent.currentModel !== 'unknown') {
-      const mColor = getModelColor(ent.currentModel);
-      ctx.font = 'bold 9px "JetBrains Mono"';
-      const statusTextW = ctx.measureText(statusText).width;
-      ctx.font = '7px "JetBrains Mono"';
-      const mBadgeX = innerX + 14 + statusTextW + 6;
-      const maxModelW = x + CARD_W - mBadgeX - 6;
-      if (maxModelW > 20) {
-        let modelLabel = ent.currentModel;
-        const mTextW = Math.min(ctx.measureText(modelLabel).width + 8, maxModelW);
-        // Truncate model name if it doesn't fit
-        while (ctx.measureText(modelLabel).width + 8 > maxModelW && modelLabel.length > 3) {
-          modelLabel = modelLabel.slice(0, -1);
-        }
-        ctx.fillStyle = mColor + '33';
-        ctx.beginPath();
-        ctx.roundRect(mBadgeX, statusY - 8, mTextW, 12, 3);
-        ctx.fill();
-        ctx.fillStyle = mColor;
-        ctx.fillText(modelLabel, mBadgeX + 4, statusY);
-      }
-    }
-
-    // ── Row 4: Current task (if working) ──
-    const taskY = statusY + 14;
-    if (ent.status === 'working' && ent.currentTask) {
-      ctx.fillStyle = '#5A6A7A';
-      ctx.font = '7px "JetBrains Mono"';
-      let taskText = ent.currentTask;
-      const maxTaskW = innerW - 4;
-      // Truncate if too long
-      while (ctx.measureText('📋 ' + taskText).width > maxTaskW && taskText.length > 10) {
-        taskText = taskText.slice(0, -4) + '...';
-      }
-      ctx.fillText('📋 ' + taskText, innerX, taskY);
-    }
-
-    // ── Row 5: EXP bar (pushed down to avoid task overlap) ──
-    const expY = y + 74;
+    // ── Row 4: EXP bar ──
+    const expY = y + 60;
     const expBarW = innerW;
     const expBarH = 6;
     let expProg = ent.expProgress;
@@ -3076,24 +2289,25 @@ function drawDesktopStatusBar() {
     ctx.roundRect(innerX, expY, expBarW, expBarH, 2);
     ctx.stroke();
 
-    // ── Row 6: EXP text + Tier label (same row, left/right aligned) ──
-    const expTextY = expY + 16;
+    // ── Row 5: EXP text ──
     ctx.fillStyle = '#3A4A5A';
     ctx.font = '7px "JetBrains Mono"';
-    ctx.fillText(`${ent.exp}/${ent.nextLevel} XP`, innerX, expTextY);
+    ctx.fillText(`${ent.exp} / ${ent.nextLevel} XP`, innerX, expY + 16);
 
-    const tierMap = { 'Lead': 'T1', 'Tech Director': 'T2', 'Heavy Coder': 'T3', 'Coder': 'T4', 'Maintenance': 'T5', 'QA': 'T5', 'Recon': 'T5', 'Interior Designer': 'T3' };
+    // ── Row 6: Tier label ──
+    const tierMap = { 'Lead': 'T1', 'Tech Director': 'T2', 'Heavy Coder': 'T3', 'Coder': 'T4', 'Maintenance': 'T5', 'QA': 'T5', 'Recon': 'T5' };
     const tier = tierMap[ent.role] || '';
     if (tier) {
+      ctx.fillStyle = '#2A3545';
       ctx.font = '7px "JetBrains Mono"';
       const tierTextW = ctx.measureText(tier).width + 6;
-      const tierX = x + CARD_W - tierTextW - 6;
+      const tierX = x + CARD_W - tierTextW - 8;
       ctx.fillStyle = '#1A2535';
       ctx.beginPath();
-      ctx.roundRect(tierX, expTextY - 9, tierTextW, 12, 2);
+      ctx.roundRect(tierX, expY + 8, tierTextW, 12, 2);
       ctx.fill();
       ctx.fillStyle = '#4A5A6A';
-      ctx.fillText(tier, tierX + 3, expTextY);
+      ctx.fillText(tier, tierX + 3, expY + 17);
     }
   });
 
@@ -3144,7 +2358,7 @@ function drawDesktopStatusBar() {
     // Filter buttons (mini) - ALL + agent names
     const filterX = todoListX;
     const filterY = todoListY;
-    const agentNames = ['Flint', 'Cipher', 'Atlas', 'Vera'];
+    const agentNames = ['Flint', 'Cipher', 'Atlas'];
     const filterBtns = [{ id: 'all', label: 'ALL' }].concat(
       agentNames.map(name => ({ id: name.toLowerCase(), label: name.substring(0, 3).toUpperCase() }))
     );
@@ -3182,7 +2396,7 @@ function drawDesktopStatusBar() {
     todoPositions.push({ x: addBtnX, y: addBtnY, width: 100, height: 18, id: 'add' });
     
     // Filter todos by agent name
-    const agentFilterNames = ['flint', 'cipher', 'atlas', 'vera'];
+    const agentFilterNames = ['flint', 'cipher', 'atlas'];
     const filteredTodos = todosData.filter(todo => {
       if (todoFilter === 'all') return true;
       if (agentFilterNames.includes(todoFilter)) {
@@ -3302,31 +2516,16 @@ function drawDesktopStatusBar() {
       ctx.font = 'bold 9px "JetBrains Mono"';
       ctx.fillText(act.agent + ':', cliX + 90, y + 12);
       
-      // Model badge (compact pill)
-      const modelName = act.model || 'unknown';
-      if (modelName !== 'unknown') {
-        const modelColor = getModelColor(modelName);
-        ctx.font = '7px "JetBrains Mono"';
-        const mw = ctx.measureText(modelName).width + 6;
-        ctx.fillStyle = modelColor + '33';
-        ctx.beginPath();
-        ctx.roundRect(cliX + 148, y + 3, mw, 11, 3);
-        ctx.fill();
-        ctx.fillStyle = modelColor;
-        ctx.fillText(modelName, cliX + 151, y + 11);
-      }
-      
-      // Action + Task text (shifted right to accommodate model badge)
+      // Action + Task text
       ctx.fillStyle = '#8A9A9A';
       ctx.font = '9px "JetBrains Mono"';
       const taskPart = act.task ? ` ${act.task}` : '';
       let actionText = act.action + taskPart;
-      const maxChars = 40;
+      const maxChars = 50;
       if (actionText.length > maxChars) {
         actionText = actionText.substring(0, maxChars - 3) + '...';
       }
-      const actionStartX = modelName !== 'unknown' ? cliX + 230 : cliX + 160;
-      ctx.fillText(actionText, actionStartX, y + 12);
+      ctx.fillText(actionText, cliX + 160, y + 12);
       
       // EXP change at end - right aligned
       const expColor = act.exp > 0 ? '#3A9A5A' : (act.exp < 0 ? '#AA4A4A' : '#5A6A5A');
@@ -3335,92 +2534,6 @@ function drawDesktopStatusBar() {
       const expX = TARGET_WIDTH - 50 - ctx.measureText(act.expChange).width;
       ctx.fillText(act.expChange, expX, y + 12);
     });
-  } else if (statusTab === 'models') {
-    // ── MODEL PERFORMANCE STATS ──
-    const modX = 16;
-    const modY = contentY;
-    
-    // Header
-    ctx.fillStyle = '#1A2535';
-    ctx.fillRect(modX, modY, TARGET_WIDTH - 32, 20);
-    ctx.fillStyle = '#D4A574';
-    ctx.font = 'bold 9px "JetBrains Mono"';
-    ctx.fillText('▶ MODEL PERFORMANCE — win rates & EXP by model', modX + 8, modY + 14);
-    
-    const modelNames = Object.keys(modelStatsData).filter(m => m !== 'unknown');
-    if (modelNames.length === 0) {
-      ctx.fillStyle = '#5A6A7A';
-      ctx.font = '9px "JetBrains Mono"';
-      ctx.fillText('No model data yet. Use --model flag with grant-exp.js', modX + 8, modY + 40);
-    } else {
-      // Column headers
-      const colY = modY + 28;
-      ctx.fillStyle = '#5A7A8A';
-      ctx.font = 'bold 8px "JetBrains Mono"';
-      ctx.fillText('MODEL', modX + 8, colY);
-      ctx.fillText('TASKS', modX + 160, colY);
-      ctx.fillText('WINS', modX + 220, colY);
-      ctx.fillText('LOSSES', modX + 280, colY);
-      ctx.fillText('WIN %', modX + 350, colY);
-      ctx.fillText('NET EXP', modX + 420, colY);
-      ctx.fillText('EXP/TASK', modX + 500, colY);
-      
-      // Separator
-      ctx.fillStyle = '#1A2535';
-      ctx.fillRect(modX + 4, colY + 4, TARGET_WIDTH - 48, 1);
-      
-      // Sort by win rate descending
-      const sorted = modelNames.sort((a, b) => {
-        const aStats = modelStatsData[a];
-        const bStats = modelStatsData[b];
-        const aWR = aStats.tasks > 0 ? aStats.wins / aStats.tasks : 0;
-        const bWR = bStats.tasks > 0 ? bStats.wins / bStats.tasks : 0;
-        return bWR - aWR;
-      });
-      
-      const rowH = 18;
-      sorted.forEach((model, i) => {
-        const stats = modelStatsData[model];
-        const ry = colY + 12 + i * rowH;
-        const winRate = stats.tasks > 0 ? Math.round((stats.wins / stats.tasks) * 100) : 0;
-        const expPerTask = stats.tasks > 0 ? Math.round(stats.totalExp / stats.tasks) : 0;
-        const mColor = getModelColor(model);
-        
-        // Model name badge
-        ctx.font = '8px "JetBrains Mono"';
-        const mw = ctx.measureText(model).width + 8;
-        ctx.fillStyle = mColor + '33';
-        ctx.beginPath();
-        ctx.roundRect(modX + 4, ry - 6, mw, 14, 3);
-        ctx.fill();
-        ctx.fillStyle = mColor;
-        ctx.fillText(model, modX + 8, ry + 4);
-        
-        // Stats columns
-        ctx.fillStyle = '#8A9AAA';
-        ctx.font = '9px "JetBrains Mono"';
-        ctx.fillText(String(stats.tasks), modX + 160, ry + 4);
-        ctx.fillStyle = '#3A9A5A';
-        ctx.fillText(String(stats.wins), modX + 220, ry + 4);
-        ctx.fillStyle = '#AA4A4A';
-        ctx.fillText(String(stats.losses), modX + 280, ry + 4);
-        
-        // Win rate with color coding
-        ctx.fillStyle = winRate >= 75 ? '#3A9A5A' : (winRate >= 50 ? '#AAAA4A' : '#AA4A4A');
-        ctx.font = 'bold 9px "JetBrains Mono"';
-        ctx.fillText(winRate + '%', modX + 350, ry + 4);
-        
-        // Net EXP
-        ctx.fillStyle = stats.totalExp >= 0 ? '#3A9A5A' : '#AA4A4A';
-        ctx.font = '9px "JetBrains Mono"';
-        const expSign = stats.totalExp >= 0 ? '+' : '';
-        ctx.fillText(expSign + stats.totalExp, modX + 420, ry + 4);
-        
-        // EXP per task
-        ctx.fillStyle = expPerTask >= 0 ? '#5A8A6A' : '#8A5A5A';
-        ctx.fillText(String(expPerTask), modX + 500, ry + 4);
-      });
-    }
   }
 }
 
@@ -3493,7 +2606,7 @@ function handleStatusBarClick(mouseX, mouseY) {
           
           // Assignment dropdown
           if (pos.type === 'assign') {
-            const agents = ['Flint', 'Cipher', 'Atlas', 'Vera'];
+            const agents = ['Flint', 'Cipher', 'Atlas'];
             const currentAssignee = pos.todo.assignedTo;
             // Build prompt with options
             let promptText = 'Assign to:\n';
@@ -3654,8 +2767,7 @@ function drawModalOverlay() {
   const modalTabs = [
     { id: 'agents', label: 'AGENTS' },
     { id: 'todos', label: 'TO-DO' },
-    { id: 'activity', label: 'ACTIVITY' },
-    { id: 'models', label: 'MODELS' }
+    { id: 'activity', label: 'ACTIVITY' }
   ];
   
   let mTabX = MODAL_X + 20;
@@ -3747,33 +2859,6 @@ function drawModalOverlay() {
       ctx.font = 'bold 11px "JetBrains Mono"';
       ctx.fillText(ent.status.toUpperCase(), cx + 26, cy + 64);
       
-      // Model badge (if available)
-      if (ent.currentModel && ent.currentModel !== 'unknown') {
-        const mColor = getModelColor(ent.currentModel);
-        ctx.font = '7px "JetBrains Mono"';
-        const mText = ent.currentModel;
-        const mTextW = ctx.measureText(mText).width + 8;
-        const mBadgeX = cx + cardW - mTextW - 10;
-        ctx.fillStyle = mColor + '33';
-        ctx.beginPath();
-        ctx.roundRect(mBadgeX, cy + 54, mTextW, 14, 3);
-        ctx.fill();
-        ctx.fillStyle = mColor;
-        ctx.fillText(mText, mBadgeX + 4, cy + 64);
-      }
-      
-      // Current task (if working)
-      if (ent.status === 'working' && ent.currentTask) {
-        ctx.fillStyle = '#6A7A8A';
-        ctx.font = '8px "JetBrains Mono"';
-        let taskText = ent.currentTask;
-        // Truncate if too long
-        while (ctx.measureText(taskText).width > cardW - 30 && taskText.length > 8) {
-          taskText = taskText.slice(0, -4) + '...';
-        }
-        ctx.fillText('📋 ' + taskText, cx + 14, cy + 78);
-      }
-      
       // EXP bar
       const expBarW = cardW - 28;
       ctx.fillStyle = '#0A0F14';
@@ -3815,7 +2900,7 @@ function drawModalOverlay() {
     const todoY = contentY;
     
     // Filter buttons row - ALL + agent names
-    const mAgentNames = ['Flint', 'Cipher', 'Atlas', 'Vera'];
+    const mAgentNames = ['Flint', 'Cipher', 'Atlas'];
     const mFilterBtns = [{ id: 'all', label: 'ALL' }].concat(
       mAgentNames.map(name => ({ id: name.toLowerCase(), label: name }))
     );
@@ -3852,7 +2937,7 @@ function drawModalOverlay() {
     modalTodoPositions.push({ x: mAddX, y: mFilterY, width: 120, height: 26, id: 'add' });
     
     // Filter todos by agent name
-    const mAgentFilterNames = ['flint', 'cipher', 'atlas', 'vera'];
+    const mAgentFilterNames = ['flint', 'cipher', 'scout', 'atlas', 'forge', 'patch', 'sentry'];
     const mFilteredTodos = todosData.filter(todo => {
       if (todoFilter === 'all') return true;
       if (mAgentFilterNames.includes(todoFilter)) {
@@ -4002,29 +3087,13 @@ function drawModalOverlay() {
       ctx.font = 'bold 11px "JetBrains Mono"';
       ctx.fillText(act.agent + ':', cliX + 80, cliY + 14);
       
-      // Model badge (in modal — slightly larger)
-      const modalModelName = act.model || 'unknown';
-      let actionStartOffset = 160;
-      if (modalModelName !== 'unknown') {
-        const mmColor = getModelColor(modalModelName);
-        ctx.font = '8px "JetBrains Mono"';
-        const mmw = ctx.measureText(modalModelName).width + 8;
-        ctx.fillStyle = mmColor + '33';
-        ctx.beginPath();
-        ctx.roundRect(cliX + 158, cliY + 4, mmw, 13, 3);
-        ctx.fill();
-        ctx.fillStyle = mmColor;
-        ctx.fillText(modalModelName, cliX + 162, cliY + 13);
-        actionStartOffset = 168 + mmw;
-      }
-      
       // Action + Task
       ctx.fillStyle = '#8A9AAA';
       ctx.font = '11px "JetBrains Mono"';
-      const actionStart = cliX + actionStartOffset;
+      const actionStart = cliX + 160;
       const taskPart = act.task ? ` ${act.task}` : '';
       let displayText = act.action + taskPart;
-      const maxChars = Math.floor((contentW - actionStartOffset - 20) / 7);
+      const maxChars = Math.floor((contentW - 180) / 7);
       if (displayText.length > maxChars) {
         displayText = displayText.substring(0, maxChars - 3) + '...';
       }
@@ -4038,114 +3107,6 @@ function drawModalOverlay() {
       
       cliY += lineH;
     });
-  } else if (statusTab === 'models') {
-    // ── MODEL PERFORMANCE STATS (Modal view — larger, more detail) ──
-    const modX = contentX + 10;
-    let modY = contentY + 10;
-    
-    ctx.fillStyle = '#1A2535';
-    ctx.fillRect(modX, modY, contentW - 20, 28);
-    ctx.fillStyle = '#D4A574';
-    ctx.font = 'bold 12px "JetBrains Mono"';
-    ctx.fillText('▶ MODEL PERFORMANCE', modX + 10, modY + 19);
-    modY += 40;
-    
-    const modelNames = Object.keys(modelStatsData).filter(m => m !== 'unknown');
-    if (modelNames.length === 0) {
-      ctx.fillStyle = '#5A6A7A';
-      ctx.font = '11px "JetBrains Mono"';
-      ctx.fillText('No model data yet. Use --model flag with grant-exp.js', modX + 10, modY + 20);
-    } else {
-      // Sort by win rate
-      const sorted = modelNames.sort((a, b) => {
-        const aStats = modelStatsData[a];
-        const bStats = modelStatsData[b];
-        const aWR = aStats.tasks > 0 ? aStats.wins / aStats.tasks : 0;
-        const bWR = bStats.tasks > 0 ? bStats.wins / bStats.tasks : 0;
-        return bWR - aWR;
-      });
-      
-      // Model cards
-      const cardW = 220;
-      const cardH = 120;
-      const cardGap = 12;
-      const cardsPerRow = Math.floor(contentW / (cardW + cardGap));
-      
-      sorted.forEach((model, i) => {
-        const stats = modelStatsData[model];
-        const col = i % cardsPerRow;
-        const row = Math.floor(i / cardsPerRow);
-        const cx = modX + col * (cardW + cardGap);
-        const cy = modY + row * (cardH + cardGap);
-        const mColor = getModelColor(model);
-        const winRate = stats.tasks > 0 ? Math.round((stats.wins / stats.tasks) * 100) : 0;
-        
-        // Card bg
-        ctx.fillStyle = '#0D1520';
-        ctx.beginPath();
-        ctx.roundRect(cx, cy, cardW, cardH, 6);
-        ctx.fill();
-        strokeRect(ctx, cx, cy, cardW, cardH, '#1A2535');
-        
-        // Color accent bar
-        ctx.fillStyle = mColor;
-        ctx.globalAlpha = 0.6;
-        ctx.fillRect(cx, cy + 4, 4, cardH - 8);
-        ctx.globalAlpha = 1;
-        
-        // Model name
-        ctx.fillStyle = mColor;
-        ctx.font = 'bold 13px "JetBrains Mono"';
-        ctx.fillText(model, cx + 14, cy + 22);
-        
-        // Win rate badge
-        const wrColor = winRate >= 75 ? '#3A9A5A' : (winRate >= 50 ? '#AAAA4A' : '#AA4A4A');
-        ctx.fillStyle = wrColor;
-        ctx.font = 'bold 14px "JetBrains Mono"';
-        ctx.fillText(winRate + '%', cx + cardW - 50, cy + 22);
-        
-        // Stats
-        ctx.fillStyle = '#5A6A7A';
-        ctx.font = '10px "JetBrains Mono"';
-        ctx.fillText(`Tasks: ${stats.tasks}`, cx + 14, cy + 44);
-        ctx.fillStyle = '#3A9A5A';
-        ctx.fillText(`Wins: ${stats.wins}`, cx + 14, cy + 60);
-        ctx.fillStyle = '#AA4A4A';
-        ctx.fillText(`Losses: ${stats.losses}`, cx + 110, cy + 60);
-        
-        // Net EXP
-        const expSign = stats.totalExp >= 0 ? '+' : '';
-        ctx.fillStyle = stats.totalExp >= 0 ? '#3A9A5A' : '#AA4A4A';
-        ctx.font = 'bold 11px "JetBrains Mono"';
-        ctx.fillText(`Net: ${expSign}${stats.totalExp} XP`, cx + 14, cy + 80);
-        
-        // Win rate bar
-        const barX = cx + 14;
-        const barY = cy + 90;
-        const barW = cardW - 28;
-        const barH = 8;
-        ctx.fillStyle = '#0A0F14';
-        ctx.beginPath();
-        ctx.roundRect(barX, barY, barW, barH, 3);
-        ctx.fill();
-        ctx.fillStyle = mColor;
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.roundRect(barX, barY, barW * (winRate / 100), barH, 3);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        strokeRect(ctx, barX, barY, barW, barH, '#1A2535');
-        
-        // Agents breakdown (small text at bottom)
-        const agentNames = Object.keys(stats.agents || {});
-        if (agentNames.length > 0) {
-          ctx.fillStyle = '#4A5A6A';
-          ctx.font = '7px "JetBrains Mono"';
-          const agentText = agentNames.map(a => `${a}:${stats.agents[a].tasks}`).join(' · ');
-          ctx.fillText(agentText, cx + 14, cy + 112);
-        }
-      });
-    }
   }
 }
 
@@ -4411,25 +3372,17 @@ function handleAddTaskModalClick(mouseX, mouseY) {
 
 // ===== MAIN STATUS BAR =====
 function drawStatusBar() {
-  // Unified layout for all devices (removed mobile/desktop split)
-  drawDesktopStatusBar();
+  if (isMobile) {
+    drawCompactStatusBar();
+  } else {
+    drawDesktopStatusBar();
+  }
 }
 
 // ===== POLLING =====
 let pollTimer = 0;
 async function pollStatus() {
   try {
-    // Fetch agent sessions for model info
-    try {
-      const sessRes = await fetch('/api/agent-sessions');
-      if (sessRes.ok) {
-        const sessData = await sessRes.json();
-        for (const [agentName, info] of Object.entries(sessData)) {
-          agentSessionModels[agentName] = info.model || 'unknown';
-        }
-      }
-    } catch(e) { /* ignore */ }
-
     const res = await fetch('/api/employee-status');
     if (res.ok) {
       const data = await res.json();
@@ -4457,9 +3410,6 @@ async function pollStatus() {
             if (s.exp !== undefined) ent.exp = s.exp;
             if (s.nextLevel !== undefined) ent.nextLevel = s.nextLevel;
             if (s.expProgress !== undefined) ent.expProgress = s.expProgress / 100; // API sends 0-100, we use 0-1
-            // Update current task and model
-            if (s.currentTask !== undefined) ent.currentTask = s.currentTask;
-            if (s.currentModel !== undefined) ent.currentModel = s.currentModel;
           }
         });
       }
@@ -4478,35 +3428,9 @@ entities.forEach(ent => {
   }
 });
 
-// Model color mapping for badges
-function getModelColor(model) {
-  const colors = {
-    'claude-opus': '#D4A574',
-    'claude-sonnet': '#C09060',
-    'claude-haiku': '#A07848',
-    'claude': '#B08860',
-    'gpt-5': '#74AA9C',
-    'gpt-4': '#5A9A8A',
-    'o3': '#4A8A7A',
-    'o4-mini': '#3A7A6A',
-    'codex': '#2A6A5A',
-    'gemini-pro': '#4285F4',
-    'gemini-flash': '#34A853',
-    'gemini': '#4285F4',
-    'kimi': '#FF6B6B',
-    'grok': '#FF4500',
-    'deepseek': '#6B5BFF',
-    'qwen': '#FF8C42',
-    'mistral': '#F7D046',
-    'unknown': '#5A6A7A',
-  };
-  return colors[model] || '#7A8A9A';
-}
-
 // Status board data
 let todosData = [];
 let activityData = [];
-let modelStatsData = {}; // Model performance stats
 let agentsData = {}; // Map of agent name -> agent data (for colors)
 let statusTabPositions = [];
 let todoPositions = [];
@@ -4514,16 +3438,14 @@ let modalTabPositions = [];
 let modalTodoPositions = [];
 let todoFilter = 'all'; // 'all' or agent name lowercase ('flint', 'cipher', etc.)
 let currentUser = 'Flint'; // Current user (not used for filtering anymore)
-let agentSessionModels = {}; // Map of agent name -> current model
 
 // Fetch todos and activity data
 async function fetchStatusBoardData() {
   try {
-    const [todosRes, activityRes, statusRes, modelRes] = await Promise.all([
+    const [todosRes, activityRes, statusRes] = await Promise.all([
       fetch('/api/todos'),
       fetch('/api/todos/activity'),
-      fetch('/api/employee-status'),
-      fetch('/api/model-stats')
+      fetch('/api/employee-status')
     ]);
     todosData = await todosRes.json();
     activityData = await activityRes.json();
@@ -4534,15 +3456,8 @@ async function fetchStatusBoardData() {
     const statusData = await statusRes.json();
     agentsData = {};
     if (statusData.agents) {
-      statusData.agents.forEach(a => { 
-        agentsData[a.name] = a; 
-        // Store task/model in agentSessionModels for activity log
-        if (a.currentModel) {
-          agentSessionModels[a.name] = a.currentModel;
-        }
-      });
+      statusData.agents.forEach(a => { agentsData[a.name] = a; });
     }
-    try { modelStatsData = await modelRes.json(); } catch(e) { modelStatsData = {}; }
   } catch (err) {
     console.error('Error fetching status board data:', err);
   }
@@ -4579,9 +3494,6 @@ function gameLoop(timestamp) {
     drawStatusBar();
   }
   
-  // Draw quarter item hover tooltip (above modals but below confirm/add)
-  drawQuarterItemTooltip(ctx);
-
   // Draw confirmation modal on top of everything
   drawConfirmModal();
 
