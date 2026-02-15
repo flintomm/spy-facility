@@ -509,6 +509,10 @@ const C = {
   cooler:'#8098A8', coolerJug:'#A0C8D8',
   bean1:'#7A2828', bean2:'#28487A',
   plant:'#2E7D32', plantL:'#4CAF50', plantD:'#1B5E20', pot:'#795548', potD:'#5D4037',
+  corridorBase:'#3A2F1C', corridorAccent:'#B8863B', corridorHighlight:'#8C6A2B',
+  corridorCross:'#2C3642', corridorCrossLine:'#5F7DA2',
+  corridorLoop:'#2B2420', corridorLoopRail:'#FFB347',
+  corridorMedallion:'#5C4A38', corridorMedallionInset:'#C89B3C',
   radio:'#3A3A3A', radioAnt:'#808080', radioLight:'#CC3333',
   clipboard:'#C8B890', clipMetal:'#A0A0A0', clipText:'#6A6040',
   // UI
@@ -570,7 +574,7 @@ let addTaskModal = {
   active: false,
   taskText: '',
   selectedAssignee: '',
-  agents: ['Flint', 'Cipher', 'Atlas', 'Vera'],
+  agents: ['Flint', 'Cipher'],
   onSubmit: null,
   onCancel: null,
   inputPos: { x: 0, y: 0, width: 0, height: 0 },
@@ -603,13 +607,61 @@ function podPos(col) {
 const PODS = [];
 for (let c = 0; c < 4; c++) PODS.push(podPos(c));
 
+// Quarters (all four)
 const QUARTERS = [
   { agent: 'Flint', label: "FLINT'S QUARTERS", x: 20, y: FLOOR2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 72, y: FLOOR2_Y + 60 } },
   { agent: 'Cipher', label: "CIPHER'S QUARTERS", x: 20 + (QUARTER_W + QUARTER_GAP), y: FLOOR2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + (QUARTER_W + QUARTER_GAP) + 140, y: FLOOR2_Y + 58 } },
-  { agent: 'Atlas', label: "ATLAS' QUARTERS", x: 20 + 2 * (QUARTER_W + QUARTER_GAP), y: FLOOR2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + 2 * (QUARTER_W + QUARTER_GAP) + 60, y: FLOOR2_Y + 62 } },
-  // Vera's quarters - second row, first position
-  { agent: 'Vera', label: "VERA'S QUARTERS", x: 20, y: QUARTERS_ROW2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 72, y: QUARTERS_ROW2_Y + 60 } }
+  { agent: 'Scrub', label: "SCRUB'S QUARTERS", x: 20 + 2 * (QUARTER_W + QUARTER_GAP), y: FLOOR2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + 2 * (QUARTER_W + QUARTER_GAP) + 60, y: FLOOR2_Y + 62 } },
+  { agent: 'Scout', label: "SCOUT'S QUARTERS", x: 20, y: QUARTERS_ROW2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + 60, y: QUARTERS_ROW2_Y + 62 } },
+  { agent: 'Vera', label: "VERA'S QUARTERS", x: 20 + (QUARTER_W + QUARTER_GAP), y: QUARTERS_ROW2_Y, w: QUARTER_W, h: QUARTER_H, spritePos: { x: 20 + (QUARTER_W + QUARTER_GAP) + 140, y: QUARTERS_ROW2_Y + 58 } }
 ];
+
+const CORRIDOR_SPINE_WIDTH = 48;
+const CORRIDOR_SEGMENTS = (() => {
+  const spineX = ((ROOMS[0].x + ROOMS[0].w) + ROOMS[1].x) / 2 - CORRIDOR_SPINE_WIDTH / 2;
+  const spineY = ROOM_Y - 10;
+  const spineH = (LOUNGE_Y + LOUNGE_H + 12) - spineY;
+  const spine = { x: spineX, y: spineY, w: CORRIDOR_SPINE_WIDTH, h: spineH };
+  const crossWidth = (ROOMS[1].x + ROOMS[1].w) - ROOMS[0].x;
+  const crossHeight = 32;
+  const upperCross = { x: ROOMS[0].x, y: ROOM_Y + ROOM_H / 2 - crossHeight / 2, w: crossWidth, h: crossHeight };
+  const lowerCross = { x: ROOMS[2].x, y: ROOMS[2].y + ROOM_H / 2 - crossHeight / 2, w: crossWidth, h: crossHeight };
+  const inset = 16;
+  const loopLeft = PODS[0].x - inset;
+  const loopTop = POD_Y - inset;
+  const loopRight = PODS[PODS.length - 1].x + POD_W + inset;
+  const podLoop = { x: loopLeft, y: loopTop, w: loopRight - loopLeft, h: POD_H + inset * 2, inset, radius: 18 };
+  const loungeBulb = { x: spineX + CORRIDOR_SPINE_WIDTH / 2, y: LOUNGE_Y - 30, radius: 30 };
+  return { spine, upperCross, lowerCross, podLoop, loungeBulb };
+})();
+
+const CORRIDOR_PLANTS = (() => {
+  const { spine, loungeBulb } = CORRIDOR_SEGMENTS;
+  const spineLeft = spine.x;
+  const spineRight = spine.x + spine.w;
+  const base = [
+    { cx: spineLeft + 6, cy: ROOM_Y + 60, size: 1.3, rotation: -12 },
+    { cx: spineRight - 6, cy: ROOM_Y + 60, size: 1.3, rotation: 12 },
+    { cx: spineLeft + 6, cy: ROOMS[2].y + 70, size: 1.3, rotation: -8 },
+    { cx: spineRight - 6, cy: ROOMS[2].y + 70, size: 1.3, rotation: 8 },
+    { cx: spineLeft + 10, cy: POD_Y - 4, size: 1.4, tiers: 2 },
+    { cx: spineRight - 10, cy: POD_Y - 4, size: 1.4, tiers: 2 },
+    { cx: spineLeft + 10, cy: POD_Y + POD_H + 24, size: 1.4, tiers: 2 },
+    { cx: spineRight - 10, cy: POD_Y + POD_H + 24, size: 1.4, tiers: 2 },
+  ];
+  const ringRadius = loungeBulb.radius - 10;
+  const ring = [0, 90, 180, 270].map((deg) => {
+    const rad = deg * Math.PI / 180;
+    return {
+      cx: loungeBulb.x + Math.cos(rad) * ringRadius,
+      cy: loungeBulb.y + Math.sin(rad) * ringRadius,
+      size: 1,
+      rotation: deg + 45,
+      medallionRadius: 9
+    };
+  });
+  return [...base, ...ring];
+})();
 
 // ===== SCALABLE MEETING LOCATIONS =====
 const MEETING_LOCATIONS = {
@@ -664,45 +716,55 @@ const GALLEY_POSITIONS = {
 
 // Custom desk positions for agents without pods
 const CUSTOM_DESK_POSITIONS = {
-  // Currently none - all agents have pods
+  // Scout & Vera share office - positions set in AGENTS array
 };
 
 // Desk center positions (where agents sit)
 function deskCenter(pod) { return { x: pod.x + pod.w/2, y: pod.y + 52 }; }
 
-// ===== AGENTS CONFIG =====
+// ===== AGENTS CONFIG (Flint + Cipher only for now) =====
 const AGENTS = [
   {
-    name:'Flint', role:'Lead', color:'#FF8C00', podIndex:0,
+    name:'Flint', role:'Director', color:'#FF8C00', podIndex:0,
     deskItems:['radio','clipboard'],
-    quartersItems:['medals','tacticalMap','securePhone','familyPhoto'],
+    quartersItems:['bed'],
     companion:{ name:'Lucky', type:'boston_terrier' },
     status:'idle',
     level:5, exp:1125, nextLevel:1500, expProgress:0.75
   },
   {
-    name:'Cipher', role:'Coder', color:'#00D4FF', podIndex:1,
+    name:'Cipher', role:'Systems', color:'#00D4FF', podIndex:1,
     deskItems:['rubberDuck','energyDrink'],
-    quartersItems:['serverArray','retroConsole','coffeeMug','catPhoto'],
+    quartersItems:['bed'],
     companion:null,
     status:'idle',
     level:2, exp:500, nextLevel:750, expProgress:0.66
   },
   {
-    name:'Atlas', role:'Tech Director', color:'#3366CC', podIndex:3,
-    deskItems:[],
-    quartersItems:['medals','worldMap','journal','diploma'],
+    name:'Scrub', role:'Security', color:'#8B0000', podIndex:2,
+    deskItems:['evidenceBag','shredder','blacklight','sanitizerSpray'],
+    quartersItems:['bed'],
     companion:null,
     status:'idle',
-    level:1, exp:25, nextLevel:500, expProgress:0.05
+    level:1, exp:0, nextLevel:500, expProgress:0
   },
   {
-    name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:2, // Pod 2, next to Cipher (pod 1)
-    deskItems:['succulent','sketchbook'],
-    quartersItems:['fabricSwatches','designBooks','polaroidWall','incense'],
-    companion:{ name:'Leaf', type:'succulent' },
+    name:'Scout', role:'Researcher', color:'#9B59B6', podIndex:3,
+    deskItems:['notebook','coffee'],
+    quartersItems:['bed'],
+    deskPos: { x: 375, y: 155 }, // Lower position for shared office
+    companion:null,
     status:'idle',
-    level:1, exp:25, nextLevel:500, expProgress:0.05
+    level:1, exp:0, nextLevel:500, expProgress:0
+  },
+  {
+    name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:3, // Shares office with Scout
+    deskItems:['succulent','sketchbook'],
+    quartersItems:['bed'],
+    deskPos: { x: 465, y: 155 }, // Side-by-side with Scout
+    companion:null,
+    status:'idle',
+    level:1, exp:0, nextLevel:500, expProgress:0
   }
 ];
 
@@ -1806,113 +1868,12 @@ function drawQuarter(c, quarter) {
   switch (agent) {
     case 'Flint':
       drawBed(c, x+18, y+28, 88, 'left');
-      drawDogBed(c, x+w-60, y+70);
-      drawWhiteboard(c, x+w-96, y+24);
-      drawPlant(c, x+30, y+h-60, 0.8);
-      // Quarters items - Flint
-      // Medals: wall mounted above bed (on wall strip)
-      if (items.includes('medals')) {
-        drawQuarterItem(c, 'medals', x+50, y+12);
-        quarterItemPositions.push({ x: x+50, y: y+12, width: 28, height: 18, item: 'medals', quarterAgent: agent });
-      }
-      // Tactical map: on wall (above whiteboard area)
-      if (items.includes('tacticalMap')) {
-        drawQuarterItem(c, 'tacticalMap', x+w-92, y+58);
-        quarterItemPositions.push({ x: x+w-92, y: y+58, width: 48, height: 32, item: 'tacticalMap', quarterAgent: agent });
-      }
-      // Secure phone: on nightstand (right side of bed)
-      if (items.includes('securePhone')) {
-        drawQuarterItem(c, 'securePhone', x+w-52, y+66);
-        quarterItemPositions.push({ x: x+w-52, y: y+66, width: 16, height: 24, item: 'securePhone', quarterAgent: agent });
-      }
-      // Family photo: on wall near bed
-      if (items.includes('familyPhoto')) {
-        drawQuarterItem(c, 'familyPhoto', x+18, y+72);
-        quarterItemPositions.push({ x: x+18, y: y+72, width: 18, height: 22, item: 'familyPhoto', quarterAgent: agent });
-      }
       break;
     case 'Cipher':
       drawBed(c, x+w-110, y+28, 90, 'right');
-      drawServerRack(c, x+24, y+32);
-      drawMiniFridge(c, x+22, y+78);
-      drawEnergyDrink(c, x+60, y+78);
-      // Quarters items - Cipher
-      // Server array: on the wall (where server rack is)
-      if (items.includes('serverArray')) {
-        drawQuarterItem(c, 'serverArray', x+26, y+36);
-        quarterItemPositions.push({ x: x+26, y: y+36, width: 16, height: 34, item: 'serverArray', quarterAgent: agent });
-      }
-      // Retro console: on mini fridge
-      if (items.includes('retroConsole')) {
-        drawQuarterItem(c, 'retroConsole', x+22, y+112);
-        quarterItemPositions.push({ x: x+22, y: y+112, width: 26, height: 12, item: 'retroConsole', quarterAgent: agent });
-      }
-      // Coffee mug: on nightstand
-      if (items.includes('coffeeMug')) {
-        drawQuarterItem(c, 'coffeeMug', x+w-40, y+76);
-        quarterItemPositions.push({ x: x+w-40, y: y+76, width: 12, height: 16, item: 'coffeeMug', quarterAgent: agent });
-      }
-      // Cat photo: on wall above bed
-      if (items.includes('catPhoto')) {
-        drawQuarterItem(c, 'catPhoto', x+w-48, y+32);
-        quarterItemPositions.push({ x: x+w-48, y: y+32, width: 18, height: 22, item: 'catPhoto', quarterAgent: agent });
-      }
       break;
-    case 'Atlas':
+    case 'Scrub':
       drawBed(c, x+26, y+32, 88, 'left');
-      drawBlueprintDesk(c, x+110, y+80);
-      drawBookshelf(c, x+w-70, y+22, 56);
-      drawPlant(c, x+90, y+28, 0.7);
-      // Quarters items - Atlas
-      // Medals: on wall near bookshelf
-      if (items.includes('medals')) {
-        drawQuarterItem(c, 'medals', x+90, y+12);
-        quarterItemPositions.push({ x: x+90, y: y+12, width: 28, height: 18, item: 'medals', quarterAgent: agent });
-      }
-      // World map: on wall above bed
-      if (items.includes('worldMap')) {
-        drawQuarterItem(c, 'worldMap', x+40, y+12);
-        quarterItemPositions.push({ x: x+40, y: y+12, width: 40, height: 26, item: 'worldMap', quarterAgent: agent });
-      }
-      // Journal: on desk
-      if (items.includes('journal')) {
-        drawQuarterItem(c, 'journal', x+112, y+90);
-        quarterItemPositions.push({ x: x+112, y: y+90, width: 16, height: 20, item: 'journal', quarterAgent: agent });
-      }
-      // Diploma: on wall above bookshelf
-      if (items.includes('diploma')) {
-        drawQuarterItem(c, 'diploma', x+w-66, y+62);
-        quarterItemPositions.push({ x: x+w-66, y: y+62, width: 28, height: 20, item: 'diploma', quarterAgent: agent });
-      }
-      break;
-    case 'Vera':
-      drawBed(c, x+18, y+28, 88, 'left');
-      drawDesignDesk(c, x+110, y+76);
-      drawMoodBoard(c, x+w-80, y+22);
-      drawArtSupplies(c, x+24, y+80);
-      drawSucculent(c, x+30, y+70);
-      drawPlant(c, x+w-50, y+h-50, 0.9);
-      // Quarters items - Vera
-      // Fabric swatches: on mood board area
-      if (items.includes('fabricSwatches')) {
-        drawQuarterItem(c, 'fabricSwatches', x+w-76, y+26);
-        quarterItemPositions.push({ x: x+w-76, y: y+26, width: 28, height: 22, item: 'fabricSwatches', quarterAgent: agent });
-      }
-      // Design books: on desk
-      if (items.includes('designBooks')) {
-        drawQuarterItem(c, 'designBooks', x+112, y+80);
-        quarterItemPositions.push({ x: x+112, y: y+80, width: 26, height: 32, item: 'designBooks', quarterAgent: agent });
-      }
-      // Polaroid wall: on wall above bed
-      if (items.includes('polaroidWall')) {
-        drawQuarterItem(c, 'polaroidWall', x+22, y+32);
-        quarterItemPositions.push({ x: x+22, y: y+32, width: 34, height: 26, item: 'polaroidWall', quarterAgent: agent });
-      }
-      // Incense: on design desk
-      if (items.includes('incense')) {
-        drawQuarterItem(c, 'incense', x+202, y+72);
-        quarterItemPositions.push({ x: x+202, y: y+72, width: 10, height: 26, item: 'incense', quarterAgent: agent });
-      }
       break;
   }
 }
@@ -1951,15 +1912,182 @@ function drawQuartersOverlay(ctx) {
 
 // ===== STATIC BACKGROUND =====
 function renderOpsCorridors(c) {
-  // Corridor between rooms row 2 and pods
+  // Base planks for ops-floor hallways
   drawFloor(c, 10, ROOM_Y + ROOM_H*2 + ROOM_GAP, 780, POD_Y - (ROOM_Y + ROOM_H*2 + ROOM_GAP));
-  // Corridor below pods (to lounge)
   drawFloor(c, 10, POD_Y + POD_H, 780, LOUNGE_Y - POD_Y - POD_H);
-  // Corridor below lounge (to floor separator)
   drawFloor(c, 10, LOUNGE_Y + LOUNGE_H, 780, FLOOR_SEP_Y - LOUNGE_Y - LOUNGE_H);
   // Walkway in quarters area
   drawFloor(c, 10, FLOOR2_Y - 8, 760, 12);
   drawFloor(c, 10, FLOOR2_Y + QUARTER_H, 760, BAR_Y - FLOOR2_Y - QUARTER_H);
+
+  renderCorridorFlow(c);
+}
+
+function renderCorridorFlow(c) {
+  drawSpinePattern(c, CORRIDOR_SEGMENTS.spine);
+  drawCrossbarPattern(c, CORRIDOR_SEGMENTS.upperCross);
+  drawCrossbarPattern(c, CORRIDOR_SEGMENTS.lowerCross);
+  drawPodLoopPattern(c, CORRIDOR_SEGMENTS.podLoop);
+  drawLoungeTurnout(c, CORRIDOR_SEGMENTS.loungeBulb);
+  drawCorridorPlants(c);
+}
+
+function drawSpinePattern(c, seg) {
+  rect(c, seg.x, seg.y, seg.w, seg.h, C.corridorBase);
+  const chevronH = 12;
+  let step = 0;
+  for (let y = seg.y; y < seg.y + seg.h; y += chevronH) {
+    const primary = step % 2 === 0 ? C.corridorHighlight : C.corridorAccent;
+    const secondary = step % 2 === 0 ? C.corridorAccent : C.corridorHighlight;
+    c.fillStyle = primary;
+    c.beginPath();
+    c.moveTo(seg.x, y);
+    c.lineTo(seg.x + seg.w, y);
+    c.lineTo(seg.x + seg.w / 2, y + chevronH);
+    c.closePath();
+    c.fill();
+    c.fillStyle = secondary;
+    c.beginPath();
+    c.moveTo(seg.x, y + chevronH);
+    c.lineTo(seg.x + seg.w / 2, y);
+    c.lineTo(seg.x + seg.w, y + chevronH);
+    c.closePath();
+    c.fill();
+    step++;
+  }
+}
+
+function drawCrossbarPattern(c, seg) {
+  rect(c, seg.x, seg.y, seg.w, seg.h, C.corridorCross);
+  const centerY = seg.y + seg.h / 2 - 1;
+  for (let x = seg.x + 6; x < seg.x + seg.w - 6; x += 16) {
+    rect(c, x, centerY, 8, 2, C.corridorCrossLine);
+  }
+  rect(c, seg.x, seg.y, seg.w, 2, 'rgba(255,255,255,0.05)');
+  rect(c, seg.x, seg.y + seg.h - 2, seg.w, 2, 'rgba(0,0,0,0.2)');
+}
+
+function drawPodLoopPattern(c, loop) {
+  c.fillStyle = C.corridorLoop;
+  c.beginPath();
+  if (c.roundRect) {
+    c.roundRect(loop.x, loop.y, loop.w, loop.h, loop.radius);
+  } else {
+    c.rect(loop.x, loop.y, loop.w, loop.h);
+  }
+  c.fill();
+  c.strokeStyle = C.corridorLoopRail;
+  c.lineWidth = 2;
+  c.beginPath();
+  if (c.roundRect) {
+    c.roundRect(loop.x + 4, loop.y + 4, loop.w - 8, loop.h - 8, Math.max(loop.radius - 4, 4));
+  } else {
+    c.rect(loop.x + 4, loop.y + 4, loop.w - 8, loop.h - 8);
+  }
+  c.stroke();
+  c.beginPath();
+  if (c.roundRect) {
+    c.roundRect(loop.x + 10, loop.y + 10, loop.w - 20, loop.h - 20, Math.max(loop.radius - 10, 4));
+  } else {
+    c.rect(loop.x + 10, loop.y + 10, loop.w - 20, loop.h - 20);
+  }
+  c.stroke();
+  drawPodLoopChamfer(c, loop);
+}
+
+function drawPodLoopChamfer(c, loop) {
+  const spine = CORRIDOR_SEGMENTS.spine;
+  const chamfer = 10;
+  c.fillStyle = C.corridorBase;
+  c.beginPath();
+  c.moveTo(spine.x + 6, loop.y - chamfer / 2);
+  c.lineTo(spine.x + spine.w - 6, loop.y - chamfer / 2);
+  c.lineTo(spine.x + spine.w - 10, loop.y);
+  c.lineTo(spine.x + 10, loop.y);
+  c.closePath();
+  c.fill();
+  c.beginPath();
+  c.moveTo(spine.x + 10, loop.y + loop.h);
+  c.lineTo(spine.x + spine.w - 10, loop.y + loop.h);
+  c.lineTo(spine.x + spine.w - 6, loop.y + loop.h + chamfer / 2);
+  c.lineTo(spine.x + 6, loop.y + loop.h + chamfer / 2);
+  c.closePath();
+  c.fill();
+}
+
+function drawLoungeTurnout(c, bulb) {
+  c.fillStyle = C.corridorBase;
+  c.beginPath();
+  c.arc(bulb.x, bulb.y, bulb.radius, 0, Math.PI * 2);
+  c.fill();
+  c.strokeStyle = C.corridorAccent;
+  c.lineWidth = 1.5;
+  c.beginPath();
+  c.arc(bulb.x, bulb.y, bulb.radius - 6, 0, Math.PI * 2);
+  c.stroke();
+  c.strokeStyle = 'rgba(255,255,255,0.18)';
+  for (let i = 0; i < 4; i++) {
+    const angle = (Math.PI / 2) * i + Math.PI / 4;
+    c.beginPath();
+    c.moveTo(bulb.x + Math.cos(angle) * 6, bulb.y + Math.sin(angle) * 6);
+    c.lineTo(bulb.x + Math.cos(angle) * (bulb.radius - 8), bulb.y + Math.sin(angle) * (bulb.radius - 8));
+    c.stroke();
+  }
+}
+
+function drawCorridorPlants(c) {
+  CORRIDOR_PLANTS.forEach(plant => drawCorridorPlant(c, plant));
+}
+
+function drawCorridorPlant(c, plant) {
+  const size = plant.size || 1;
+  const centerX = plant.cx !== undefined ? plant.cx : (plant.x + 6 * size);
+  const centerY = plant.cy !== undefined ? plant.cy : (plant.y + 14 * size);
+  const x = centerX - 6 * size;
+  const y = centerY - 14 * size;
+  const tiers = plant.tiers || 1;
+  drawCorridorMedallion(c, centerX, centerY + 2 * size, plant.medallionRadius || (8 * size));
+  drawPlanterBase(c, x, y, size, tiers);
+  drawPlantWithRotation(c, x, y - (tiers > 1 ? 2 * size : 0), size, plant.rotation || 0);
+}
+
+function drawCorridorMedallion(c, x, y, radius) {
+  const r = Math.max(radius, 4);
+  c.fillStyle = C.corridorMedallion;
+  c.beginPath();
+  c.arc(x, y, r, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = C.corridorMedallionInset;
+  c.beginPath();
+  c.arc(x, y, Math.max(r - 3, 2), 0, Math.PI * 2);
+  c.fill();
+}
+
+function drawPlanterBase(c, x, y, size, tiers) {
+  const width = 12 * size;
+  const totalWidth = width + 4 * size;
+  const baseX = x - 2 * size;
+  const startY = y + 18 * size;
+  for (let i = 0; i < tiers; i++) {
+    const offset = i * (4 * size + 2);
+    rect(c, baseX, startY + offset, totalWidth, 4 * size, C.potD);
+    rect(c, baseX, startY - 2 * size + offset, totalWidth, 2 * size, C.pot);
+  }
+}
+
+function drawPlantWithRotation(c, x, y, size, rotation) {
+  if (!rotation) {
+    drawPlant(c, x, y, size);
+    return;
+  }
+  const anchorX = x + 6 * size;
+  const anchorY = y + 12 * size;
+  c.save();
+  c.translate(anchorX, anchorY);
+  c.rotate(rotation * Math.PI / 180);
+  c.translate(-anchorX, -anchorY);
+  drawPlant(c, x, y, size);
+  c.restore();
 }
 
 function renderBackground() {
@@ -1988,9 +2116,6 @@ function renderBackground() {
     const agent = AGENTS.find(a => a.podIndex === i);
     drawPod(bg, pod, agent);
   });
-  drawPlant(bg, 30, POD_Y+POD_H+1, 0.8);
-  drawPlant(bg, 400, ROOM_Y+ROOM_H+2, 1);
-  drawPlant(bg, 700, POD_Y+POD_H+10, 1.2);
 
   // ── FLOOR SEPARATOR ──
   rect(bg, 0, FLOOR_SEP_Y, TARGET_WIDTH, 2, '#3A5A7A');
@@ -2294,7 +2419,10 @@ class AgentEntity {
   constructor(cfg) {
     Object.assign(this, cfg);
     // Handle custom desk positions for agents without podIndex
-    if (cfg.podIndex !== null && cfg.podIndex !== undefined) {
+    if (cfg.deskPos) {
+      // Use explicit desk position from config (for shared offices)
+      this.deskPos = { x: cfg.deskPos.x - 12, y: cfg.deskPos.y - 20 };
+    } else if (cfg.podIndex !== null && cfg.podIndex !== undefined) {
       this.pod = PODS[cfg.podIndex];
       const dc = deskCenter(this.pod);
       this.deskPos = { x: dc.x - 12, y: dc.y - 20 };
@@ -2846,7 +2974,8 @@ function drawDesktopStatusBar() {
     { id: 'agents', label: 'AGENTS' },
     { id: 'todos', label: 'TO-DO' },
     { id: 'activity', label: 'ACTIVITY' },
-    { id: 'models', label: 'MODELS' }
+    { id: 'models', label: 'MODELS' },
+    { id: 'proposals', label: 'APPROVAL' }
   ];
   
   // Draw tabs
@@ -3082,7 +3211,7 @@ function drawDesktopStatusBar() {
     ctx.font = '7px "JetBrains Mono"';
     ctx.fillText(`${ent.exp}/${ent.nextLevel} XP`, innerX, expTextY);
 
-    const tierMap = { 'Lead': 'T1', 'Tech Director': 'T2', 'Heavy Coder': 'T3', 'Coder': 'T4', 'Maintenance': 'T5', 'QA': 'T5', 'Recon': 'T5', 'Interior Designer': 'T3' };
+    const tierMap = { 'Director': 'T1', 'Systems': 'T2', 'Security': 'T2', 'Tech Director': 'T3', 'Heavy Coder': 'T3', 'Coder': 'T4', 'Maintenance': 'T5', 'QA': 'T5', 'Recon': 'T5', 'Interior Designer': 'T3' };
     const tier = tierMap[ent.role] || '';
     if (tier) {
       ctx.font = '7px "JetBrains Mono"';
@@ -3144,7 +3273,7 @@ function drawDesktopStatusBar() {
     // Filter buttons (mini) - ALL + agent names
     const filterX = todoListX;
     const filterY = todoListY;
-    const agentNames = ['Flint', 'Cipher', 'Atlas', 'Vera'];
+    const agentNames = ['Flint', 'Cipher', 'Scout', 'Scrub', 'Vera'];
     const filterBtns = [{ id: 'all', label: 'ALL' }].concat(
       agentNames.map(name => ({ id: name.toLowerCase(), label: name.substring(0, 3).toUpperCase() }))
     );
@@ -3182,7 +3311,7 @@ function drawDesktopStatusBar() {
     todoPositions.push({ x: addBtnX, y: addBtnY, width: 100, height: 18, id: 'add' });
     
     // Filter todos by agent name
-    const agentFilterNames = ['flint', 'cipher', 'atlas', 'vera'];
+    const agentFilterNames = ['flint', 'cipher', 'atlas', 'vera', 'scout', 'scrub'];
     const filteredTodos = todosData.filter(todo => {
       if (todoFilter === 'all') return true;
       if (agentFilterNames.includes(todoFilter)) {
@@ -3421,6 +3550,139 @@ function drawDesktopStatusBar() {
         ctx.fillText(String(expPerTask), modX + 500, ry + 4);
       });
     }
+  } else if (statusTab === 'proposals') {
+    // ── STEALTH APPROVAL PANE ──
+    const propX = 16;
+    const propY = contentY;
+    
+    // Clear action positions for click detection
+    proposalActionPositions = [];
+    
+    // Header
+    ctx.fillStyle = '#1A2535';
+    ctx.fillRect(propX, propY, TARGET_WIDTH - 32, 20);
+    ctx.fillStyle = '#D4A574';
+    ctx.font = 'bold 9px "JetBrains Mono"';
+    const pendingCount = proposalsData.filter(p => p.status === 'pending').length;
+    ctx.fillText(`▶ APPROVAL QUEUE — ${pendingCount} pending proposal${pendingCount !== 1 ? 's' : ''}`, propX + 8, propY + 14);
+    
+    if (proposalsData.length === 0 || proposalsData.filter(p => p.status === 'pending').length === 0) {
+      ctx.fillStyle = '#5A6A7A';
+      ctx.font = '9px "JetBrains Mono"';
+      ctx.fillText('No pending proposals. All caught up.', propX + 8, propY + 45);
+    } else {
+      // Column headers
+      const colY = propY + 28;
+      ctx.fillStyle = '#5A7A8A';
+      ctx.font = 'bold 8px "JetBrains Mono"';
+      ctx.fillText('PROPOSAL', propX + 8, colY);
+      ctx.fillText('AGENT', propX + 280, colY);
+      ctx.fillText('MODEL', propX + 360, colY);
+      ctx.fillText('COST', propX + 480, colY);
+      ctx.fillText('ACTIONS', propX + 560, colY);
+      
+      // Separator
+      ctx.fillStyle = '#1A2535';
+      ctx.fillRect(propX + 4, colY + 4, TARGET_WIDTH - 48, 1);
+      
+      // Filter to pending proposals
+      const pendingProposals = proposalsData.filter(p => p.status === 'pending');
+      
+      const rowH = 32;
+      pendingProposals.forEach((prop, i) => {
+        const ry = colY + 16 + i * rowH;
+        const agentColor = agentsData[prop.agent]?.color || '#7A8A9A';
+        
+        // Row background (alternating)
+        if (i % 2 === 0) {
+          ctx.fillStyle = '#0A1018';
+          ctx.fillRect(propX + 4, ry - 10, TARGET_WIDTH - 48, rowH - 2);
+        }
+        
+        // Proposal title
+        ctx.fillStyle = '#C0C8D4';
+        ctx.font = 'bold 9px "JetBrains Mono"';
+        let title = prop.title;
+        if (title.length > 35) title = title.substring(0, 32) + '...';
+        ctx.fillText(title, propX + 8, ry + 4);
+        
+        // Summary (if fits)
+        if (prop.summary) {
+          ctx.fillStyle = '#5A6A7A';
+          ctx.font = '7px "JetBrains Mono"';
+          let summary = prop.summary;
+          if (summary.length > 40) summary = summary.substring(0, 37) + '...';
+          ctx.fillText(summary, propX + 8, ry + 14);
+        }
+        
+        // Agent badge
+        ctx.font = '8px "JetBrains Mono"';
+        const agentW = ctx.measureText(prop.agent).width + 8;
+        ctx.fillStyle = agentColor + '33';
+        ctx.beginPath();
+        ctx.roundRect(propX + 280, ry - 6, agentW, 14, 3);
+        ctx.fill();
+        ctx.fillStyle = agentColor;
+        ctx.fillText(prop.agent, propX + 284, ry + 4);
+        
+        // Model badge
+        const mColor = getModelColor(prop.recommendedModel);
+        ctx.fillStyle = mColor + '33';
+        const modelW = ctx.measureText(prop.recommendedModel).width + 8;
+        ctx.beginPath();
+        ctx.roundRect(propX + 360, ry - 6, modelW, 14, 3);
+        ctx.fill();
+        ctx.fillStyle = mColor;
+        ctx.fillText(prop.recommendedModel, propX + 364, ry + 4);
+        
+        // Cost estimate
+        ctx.fillStyle = '#8A9AAA';
+        ctx.font = '9px "JetBrains Mono"';
+        ctx.fillText(prop.costEstimate || 'TBD', propX + 480, ry + 4);
+        
+        // Action buttons
+        const btnY = ry - 8;
+        const btnH = 18;
+        const btnGap = 6;
+        let btnX = propX + 560;
+        
+        // Approve button
+        const approveW = 50;
+        ctx.fillStyle = '#1A3A2A';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btnY, approveW, btnH, 3);
+        ctx.fill();
+        strokeRect(ctx, btnX, btnY, approveW, btnH, '#3A9A5A');
+        ctx.fillStyle = '#3A9A5A';
+        ctx.font = 'bold 8px "JetBrains Mono"';
+        ctx.fillText('✓ OK', btnX + 12, btnY + 12);
+        proposalActionPositions.push({ x: btnX, y: btnY, width: approveW, height: btnH, id: prop.id, action: 'approve' });
+        btnX += approveW + btnGap;
+        
+        // Deny button
+        const denyW = 50;
+        ctx.fillStyle = '#3A1A1A';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btnY, denyW, btnH, 3);
+        ctx.fill();
+        strokeRect(ctx, btnX, btnY, denyW, btnH, '#AA4A4A');
+        ctx.fillStyle = '#AA4A4A';
+        ctx.fillText('✗ NO', btnX + 12, btnY + 12);
+        proposalActionPositions.push({ x: btnX, y: btnY, width: denyW, height: btnH, id: prop.id, action: 'deny' });
+        btnX += denyW + btnGap;
+        
+        // Info button
+        const infoW = 30;
+        ctx.fillStyle = '#1A2A3A';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btnY, infoW, btnH, 3);
+        ctx.fill();
+        strokeRect(ctx, btnX, btnY, infoW, btnH, '#5A7AAA');
+        ctx.fillStyle = '#5A7AAA';
+        ctx.fillText('?', btnX + 11, btnY + 12);
+        proposalActionPositions.push({ x: btnX, y: btnY, width: infoW, height: btnH, id: prop.id, action: 'requestInfo' });
+      });
+    }
   }
 }
 
@@ -3481,7 +3743,7 @@ function handleStatusBarClick(mouseX, mouseY) {
           
           // Delete button
           if (pos.type === 'delete') {
-            showConfirm(`Delete task "${pos.todo?.text || 'this task'}"?`, () => {
+            showConfirm(`Delete task "${pos.text || 'this task'}"?`, () => {
               fetch('/api/todos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Requester': currentUser },
@@ -3493,7 +3755,7 @@ function handleStatusBarClick(mouseX, mouseY) {
           
           // Assignment dropdown
           if (pos.type === 'assign') {
-            const agents = ['Flint', 'Cipher', 'Atlas', 'Vera'];
+            const agents = ['Flint', 'Cipher'];
             const currentAssignee = pos.todo.assignedTo;
             // Build prompt with options
             let promptText = 'Assign to:\n';
@@ -3533,6 +3795,38 @@ function handleStatusBarClick(mouseX, mouseY) {
             }).then(() => fetchStatusBoardData());
             return;
           }
+        }
+      }
+    }
+
+    // Check modal proposals
+    if (statusTab === 'proposals') {
+      for (const pos of modalProposalPositions) {
+        if (mouseX >= pos.x && mouseX <= pos.x + pos.width &&
+            mouseY >= pos.y && mouseY <= pos.y + pos.height) {
+          const proposal = proposalsData.find(p => p.id === pos.id);
+          if (!proposal) return;
+
+          if (pos.action === 'approve') {
+            fetch('/api/proposals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Requester': currentUser },
+              body: JSON.stringify({ action: 'approve', id: pos.id })
+            }).then(() => fetchStatusBoardData());
+          } else if (pos.action === 'deny') {
+            fetch('/api/proposals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Requester': currentUser },
+              body: JSON.stringify({ action: 'deny', id: pos.id })
+            }).then(() => fetchStatusBoardData());
+          } else if (pos.action === 'requestInfo') {
+            fetch('/api/proposals', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-Requester': currentUser },
+              body: JSON.stringify({ action: 'requestInfo', id: pos.id })
+            }).then(() => fetchStatusBoardData());
+          }
+          return;
         }
       }
     }
@@ -3621,6 +3915,38 @@ function handleStatusBarClick(mouseX, mouseY) {
       return;
     }
   }
+
+  // Check if clicking on a proposal action
+  if (statusTab === 'proposals') {
+    for (const pos of proposalActionPositions) {
+      if (mouseX >= pos.x && mouseX <= pos.x + pos.width &&
+          mouseY >= pos.y && mouseY <= pos.y + pos.height) {
+        const proposal = proposalsData.find(p => p.id === pos.id);
+        if (!proposal) return;
+
+        if (pos.action === 'approve') {
+          fetch('/api/proposals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requester': currentUser },
+            body: JSON.stringify({ action: 'approve', id: pos.id })
+          }).then(() => fetchStatusBoardData());
+        } else if (pos.action === 'deny') {
+          fetch('/api/proposals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requester': currentUser },
+            body: JSON.stringify({ action: 'deny', id: pos.id })
+          }).then(() => fetchStatusBoardData());
+        } else if (pos.action === 'requestInfo') {
+          fetch('/api/proposals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requester': currentUser },
+            body: JSON.stringify({ action: 'requestInfo', id: pos.id })
+          }).then(() => fetchStatusBoardData());
+        }
+        return;
+      }
+    }
+  }
 }
 
 // ===== MODAL OVERLAY =====
@@ -3655,7 +3981,8 @@ function drawModalOverlay() {
     { id: 'agents', label: 'AGENTS' },
     { id: 'todos', label: 'TO-DO' },
     { id: 'activity', label: 'ACTIVITY' },
-    { id: 'models', label: 'MODELS' }
+    { id: 'models', label: 'MODELS' },
+    { id: 'proposals', label: 'APPROVAL' }
   ];
   
   let mTabX = MODAL_X + 20;
@@ -3796,7 +4123,7 @@ function drawModalOverlay() {
       ctx.fillText(`${ent.exp} / ${ent.nextLevel} XP`, cx + 14, cy + 108);
       
       // Tier
-      const tierMap = { 'Lead': 'T1', 'Tech Director': 'T2', 'Heavy Coder': 'T3', 'Coder': 'T4', 'Maintenance': 'T5', 'QA': 'T5', 'Recon': 'T5' };
+      const tierMap = { 'Director': 'T1', 'Systems': 'T2', 'Security': 'T2', 'Tech Director': 'T3', 'Heavy Coder': 'T3', 'Coder': 'T4', 'Maintenance': 'T5', 'QA': 'T5', 'Recon': 'T5' };
       const tier = tierMap[ent.role] || '';
       if (tier) {
         ctx.fillStyle = '#1A2535';
@@ -3815,7 +4142,7 @@ function drawModalOverlay() {
     const todoY = contentY;
     
     // Filter buttons row - ALL + agent names
-    const mAgentNames = ['Flint', 'Cipher', 'Atlas', 'Vera'];
+    const mAgentNames = ['Flint', 'Cipher'];
     const mFilterBtns = [{ id: 'all', label: 'ALL' }].concat(
       mAgentNames.map(name => ({ id: name.toLowerCase(), label: name }))
     );
@@ -4144,6 +4471,141 @@ function drawModalOverlay() {
           const agentText = agentNames.map(a => `${a}:${stats.agents[a].tasks}`).join(' · ');
           ctx.fillText(agentText, cx + 14, cy + 112);
         }
+      });
+    }
+  } else if (statusTab === 'proposals') {
+    // ── MODAL: STEALTH APPROVAL PANE ──
+    const propX = contentX + 10;
+    let propY = contentY + 10;
+    
+    // Clear modal proposal positions
+    modalProposalPositions = [];
+    
+    // Header
+    ctx.fillStyle = '#1A2535';
+    ctx.fillRect(propX, propY, contentW - 20, 28);
+    ctx.fillStyle = '#D4A574';
+    ctx.font = 'bold 12px "JetBrains Mono"';
+    const pendingCount = proposalsData.filter(p => p.status === 'pending').length;
+    ctx.fillText(`▶ APPROVAL QUEUE — ${pendingCount} pending`, propX + 10, propY + 19);
+    propY += 40;
+    
+    if (proposalsData.length === 0 || proposalsData.filter(p => p.status === 'pending').length === 0) {
+      ctx.fillStyle = '#5A6A7A';
+      ctx.font = '11px "JetBrains Mono"';
+      ctx.fillText('No pending proposals. All caught up.', propX + 10, propY + 20);
+    } else {
+      // Column headers
+      ctx.fillStyle = '#5A7A8A';
+      ctx.font = 'bold 10px "JetBrains Mono"';
+      ctx.fillText('PROPOSAL', propX + 10, propY);
+      ctx.fillText('AGENT', propX + 320, propY);
+      ctx.fillText('MODEL', propX + 420, propY);
+      ctx.fillText('COST', propX + 560, propY);
+      ctx.fillText('ACTIONS', propX + 640, propY);
+      propY += 10;
+      
+      // Separator
+      ctx.fillStyle = '#1A2535';
+      ctx.fillRect(propX + 4, propY, contentW - 28, 1);
+      propY += 15;
+      
+      // Filter to pending proposals
+      const pendingProposals = proposalsData.filter(p => p.status === 'pending');
+      
+      const rowH = 40;
+      pendingProposals.forEach((prop, i) => {
+        const ry = propY + i * rowH;
+        const agentColor = agentsData[prop.agent]?.color || '#7A8A9A';
+        
+        // Row background (alternating)
+        if (i % 2 === 0) {
+          ctx.fillStyle = '#0A1018';
+          ctx.fillRect(propX + 4, ry - 10, contentW - 28, rowH - 4);
+        }
+        
+        // Proposal title
+        ctx.fillStyle = '#C0C8D4';
+        ctx.font = 'bold 11px "JetBrains Mono"';
+        let title = prop.title;
+        if (title.length > 40) title = title.substring(0, 37) + '...';
+        ctx.fillText(title, propX + 10, ry + 6);
+        
+        // Summary
+        if (prop.summary) {
+          ctx.fillStyle = '#5A6A7A';
+          ctx.font = '9px "JetBrains Mono"';
+          let summary = prop.summary;
+          if (summary.length > 50) summary = summary.substring(0, 47) + '...';
+          ctx.fillText(summary, propX + 10, ry + 18);
+        }
+        
+        // Agent badge
+        ctx.font = '10px "JetBrains Mono"';
+        const agentW = ctx.measureText(prop.agent).width + 10;
+        ctx.fillStyle = agentColor + '33';
+        ctx.beginPath();
+        ctx.roundRect(propX + 320, ry - 8, agentW, 18, 4);
+        ctx.fill();
+        ctx.fillStyle = agentColor;
+        ctx.fillText(prop.agent, propX + 325, ry + 6);
+        
+        // Model badge
+        const mColor = getModelColor(prop.recommendedModel);
+        ctx.fillStyle = mColor + '33';
+        const modelW = ctx.measureText(prop.recommendedModel).width + 10;
+        ctx.beginPath();
+        ctx.roundRect(propX + 420, ry - 8, modelW, 18, 4);
+        ctx.fill();
+        ctx.fillStyle = mColor;
+        ctx.fillText(prop.recommendedModel, propX + 425, ry + 6);
+        
+        // Cost estimate
+        ctx.fillStyle = '#8A9AAA';
+        ctx.font = '11px "JetBrains Mono"';
+        ctx.fillText(prop.costEstimate || 'TBD', propX + 560, ry + 6);
+        
+        // Action buttons
+        const btnY = ry - 10;
+        const btnH = 22;
+        const btnGap = 8;
+        let btnX = propX + 640;
+        
+        // Approve button
+        const approveW = 60;
+        ctx.fillStyle = '#1A3A2A';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btnY, approveW, btnH, 4);
+        ctx.fill();
+        strokeRect(ctx, btnX, btnY, approveW, btnH, '#3A9A5A');
+        ctx.fillStyle = '#3A9A5A';
+        ctx.font = 'bold 10px "JetBrains Mono"';
+        ctx.fillText('✓ APPROVE', btnX + 10, btnY + 15);
+        modalProposalPositions.push({ x: btnX, y: btnY, width: approveW, height: btnH, id: prop.id, action: 'approve' });
+        btnX += approveW + btnGap;
+        
+        // Deny button
+        const denyW = 60;
+        ctx.fillStyle = '#3A1A1A';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btnY, denyW, btnH, 4);
+        ctx.fill();
+        strokeRect(ctx, btnX, btnY, denyW, btnH, '#AA4A4A');
+        ctx.fillStyle = '#AA4A4A';
+        ctx.fillText('✗ DENY', btnX + 12, btnY + 15);
+        modalProposalPositions.push({ x: btnX, y: btnY, width: denyW, height: btnH, id: prop.id, action: 'deny' });
+        btnX += denyW + btnGap;
+        
+        // Info button
+        const infoW = 40;
+        ctx.fillStyle = '#1A2A3A';
+        ctx.beginPath();
+        ctx.roundRect(btnX, btnY, infoW, btnH, 4);
+        ctx.fill();
+        strokeRect(ctx, btnX, btnY, infoW, btnH, '#5A7AAA');
+        ctx.fillStyle = '#5A7AAA';
+        ctx.fillText('INFO', btnX + 10, btnY + 15);
+        modalProposalPositions.push({ x: btnX, y: btnY, width: infoW, height: btnH, id: prop.id, action: 'requestInfo' });
       });
     }
   }
@@ -4506,12 +4968,15 @@ function getModelColor(model) {
 // Status board data
 let todosData = [];
 let activityData = [];
+let proposalsData = [];
 let modelStatsData = {}; // Model performance stats
 let agentsData = {}; // Map of agent name -> agent data (for colors)
 let statusTabPositions = [];
 let todoPositions = [];
+let proposalActionPositions = [];
 let modalTabPositions = [];
 let modalTodoPositions = [];
+let modalProposalPositions = [];
 let todoFilter = 'all'; // 'all' or agent name lowercase ('flint', 'cipher', etc.)
 let currentUser = 'Flint'; // Current user (not used for filtering anymore)
 let agentSessionModels = {}; // Map of agent name -> current model
@@ -4519,14 +4984,20 @@ let agentSessionModels = {}; // Map of agent name -> current model
 // Fetch todos and activity data
 async function fetchStatusBoardData() {
   try {
-    const [todosRes, activityRes, statusRes, modelRes] = await Promise.all([
+    const [todosRes, activityRes, statusRes, modelRes, proposalsRes] = await Promise.all([
       fetch('/api/todos'),
       fetch('/api/todos/activity'),
       fetch('/api/employee-status'),
-      fetch('/api/model-stats')
+      fetch('/api/model-stats'),
+      fetch('/api/proposals')
     ]);
     todosData = await todosRes.json();
     activityData = await activityRes.json();
+    try {
+      proposalsData = await proposalsRes.json();
+    } catch(e) {
+      proposalsData = [];
+    }
     // Add expChange display field
     activityData.forEach(act => {
       act.expChange = act.exp > 0 ? `+${act.exp}` : (act.exp < 0 ? `${act.exp}` : '');

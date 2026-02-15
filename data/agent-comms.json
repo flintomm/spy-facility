@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1771193760933,
+    "timestamp": "2026-02-15T22:16:00.933Z",
+    "from": "Flint",
+    "to": "Cipher",
+    "type": "task",
+    "message": "Test message - comms logging active"
+  },
+  {
+    "id": 1771193781540,
+    "timestamp": "2026-02-15T22:16:21.540Z",
+    "from": "Cipher",
+    "to": "Flint",
+    "type": "task",
+    "message": "Test message from Cipher"
+  },
+  {
+    "id": 1771193957351,
+    "timestamp": "2026-02-15T22:19:17.351Z",
+    "from": "Flint",
+    "to": "Scout",
+    "type": "task",
+    "message": "Identity verification test starting"
+  }
+]

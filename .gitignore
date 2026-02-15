@@ -1,0 +1,20 @@
+# Logs
+logs/*.log
+*.log
+
+# macOS
+.DS_Store
+
+# Dependencies
+node_modules/
+
+# Runtime data (generated during operation)
+data/agent-sessions.json
+data/activity.json
+data/todo-activity.json
+data/todos.json
+data/proposals.json
+
+# Environment
+.env
+.env.local

@@ -27,10 +27,20 @@ const mimeTypes = {
 const FLINT_TIMEOUT_MS = 60000;
 const SUBAGENT_TIMEOUT_MS = 30000;
 
-const SESSIONS_DIR = path.join(
-  process.env.HOME || '/Users/flint',
-  '.openclaw/agents/main/sessions'
-);
+// Base OpenClaw directory
+const OPENCLAW_DIR = path.join(process.env.HOME || '/Users/flint', '.openclaw');
+
+// All agent session directories to watch
+const AGENT_SESSION_DIRS = {
+  main: path.join(OPENCLAW_DIR, 'agents/main/sessions'),
+  cipher: path.join(OPENCLAW_DIR, 'agents/cipher/sessions'),
+  scout: path.join(OPENCLAW_DIR, 'agents/scout/sessions'),
+  scrub: path.join(OPENCLAW_DIR, 'agents/scrub/sessions'),
+  vera: path.join(OPENCLAW_DIR, 'agents/vera/sessions')
+};
+
+// Legacy compatibility
+const SESSIONS_DIR = AGENT_SESSION_DIRS.main;
 
 const AGENTS_JSON_PATH = path.join(__dirname, 'data', 'agents.json');
 const AGENT_SESSIONS_PATH = path.join(__dirname, 'data', 'agent-sessions.json');
@@ -143,36 +153,47 @@ function getLastJsonlEntry(filePath) {
 
 /**
  * Get timestamp of last activity from a session's JSONL file
+ * Searches across ALL agent session directories
  * Returns 0 if no activity found
  */
 function getSessionLastActivity(sessionId) {
-  const jsonlPath = path.join(SESSIONS_DIR, `${sessionId}.jsonl`);
-  const entry = getLastJsonlEntry(jsonlPath);
-  
-  if (entry && entry.timestamp) {
-    return new Date(entry.timestamp).getTime();
+  // Check each agent's session directory
+  for (const [agentId, sessDir] of Object.entries(AGENT_SESSION_DIRS)) {
+    const jsonlPath = path.join(sessDir, `${sessionId}.jsonl`);
+    if (fs.existsSync(jsonlPath)) {
+      const entry = getLastJsonlEntry(jsonlPath);
+      if (entry && entry.timestamp) {
+        return new Date(entry.timestamp).getTime();
+      }
+    }
   }
   return 0;
 }
 
 /**
- * Load OpenClaw's sessions.json to get sessionId -> sessionKey mapping
- * This tells us which session file belongs to which agent key
+ * Load OpenClaw's sessions.json from ALL agent directories
+ * Returns combined sessionId -> {sessionKey, agentId} mapping
  */
 function loadOpenClawSessionsJson() {
   const map = {};
-  try {
-    const sessionsPath = path.join(SESSIONS_DIR, 'sessions.json');
-    if (fs.existsSync(sessionsPath)) {
-      const data = JSON.parse(fs.readFileSync(sessionsPath, 'utf8'));
-      for (const [key, val] of Object.entries(data)) {
-        if (val && val.sessionId) {
-          map[val.sessionId] = key;
+  
+  for (const [agentId, sessDir] of Object.entries(AGENT_SESSION_DIRS)) {
+    try {
+      const sessionsPath = path.join(sessDir, 'sessions.json');
+      if (fs.existsSync(sessionsPath)) {
+        const data = JSON.parse(fs.readFileSync(sessionsPath, 'utf8'));
+        for (const [key, val] of Object.entries(data)) {
+          if (val && val.sessionId) {
+            map[val.sessionId] = key;
+            // Also track which agent directory this came from
+            if (!map._agentMap) map._agentMap = {};
+            map._agentMap[val.sessionId] = agentId;
+          }
         }
       }
+    } catch (err) {
+      // Silently continue - directory might not exist yet
     }
-  } catch (err) {
-    console.error('[STATUS] Error reading OpenClaw sessions.json:', err.message);
   }
   return map;
 }
@@ -194,72 +215,82 @@ function loadOpenClawSessionsJson() {
  *   - IDLE: Not registered OR no JSONL activity in last 30s
  *   - Rationale: Subagents should be actively working when spawned, 30s is tight
  */
+
+// Map agent directory name to display name
+const AGENT_DIR_TO_NAME = {
+  main: 'Flint',
+  cipher: 'Cipher',
+  scout: 'Scout',
+  scrub: 'Scrub',
+  vera: 'Vera',
+  atlas: 'Atlas',
+  pulse: 'Pulse'
+};
+
+/**
+ * Get the most recent JSONL activity timestamp from an agent's session directory
+ */
+function getAgentLastActivity(agentId) {
+  const sessDir = AGENT_SESSION_DIRS[agentId];
+  if (!sessDir || !fs.existsSync(sessDir)) return 0;
+  
+  try {
+    const files = fs.readdirSync(sessDir).filter(f => f.endsWith('.jsonl'));
+    if (files.length === 0) return 0;
+    
+    // Find the most recently modified JSONL file
+    let latestTime = 0;
+    let latestFile = null;
+    
+    for (const file of files) {
+      const fullPath = path.join(sessDir, file);
+      const stat = fs.statSync(fullPath);
+      if (stat.mtimeMs > latestTime) {
+        latestTime = stat.mtimeMs;
+        latestFile = fullPath;
+      }
+    }
+    
+    if (!latestFile) return 0;
+    
+    // Get the actual last entry timestamp from the file
+    const entry = getLastJsonlEntry(latestFile);
+    if (entry && entry.timestamp) {
+      return new Date(entry.timestamp).getTime();
+    }
+    
+    // Fall back to file mtime
+    return latestTime;
+  } catch (err) {
+    return 0;
+  }
+}
+
 function getAgentStatus() {
   const now = Date.now();
   const status = {
     Flint: 'idle',
     Cipher: 'idle',
+    Scout: 'idle',
+    Scrub: 'idle',
     Atlas: 'idle',
     Vera: 'idle',
     Pulse: 'idle'
   };
 
-  // Load session mappings
-  const openClawMap = loadOpenClawSessionsJson(); // sessionId -> sessionKey
-  const agentRegistry = loadAgentSessionMap();    // agentName -> {sessionId, ...}
-
-  // Build reverse map: sessionId -> agentName from registry
-  const registrySessionToAgent = {};
-  for (const [agentName, info] of Object.entries(agentRegistry)) {
-    if (info.sessionId) {
-      registrySessionToAgent[info.sessionId] = agentName;
-    }
-  }
-
-  // Build complete sessionId -> agent mapping
-  const sessionToAgent = {};
-  for (const [sessionId, sessionKey] of Object.entries(openClawMap)) {
-    // Check if this session is in the registry first
-    if (registrySessionToAgent[sessionId]) {
-      sessionToAgent[sessionId] = registrySessionToAgent[sessionId];
-    } else if (sessionKey === 'agent:main:main') {
-      // Flint's main session
-      sessionToAgent[sessionId] = 'Flint';
-    }
-  }
-  // Add any registry entries that weren't in OpenClaw map (fallback)
-  for (const [agentName, info] of Object.entries(agentRegistry)) {
-    if (info.sessionId && !sessionToAgent[info.sessionId]) {
-      sessionToAgent[info.sessionId] = agentName;
-    }
-  }
-
-  // Check activity for each known session
-  for (const [sessionId, agentName] of Object.entries(sessionToAgent)) {
+  // Check each agent's session directory directly
+  for (const [agentId, agentName] of Object.entries(AGENT_DIR_TO_NAME)) {
     if (!status.hasOwnProperty(agentName)) continue;
-
-    let lastActivity = getSessionLastActivity(sessionId);
+    if (!AGENT_SESSION_DIRS[agentId]) continue;
     
-    // If no activity yet, use session start time from registry
-    if (lastActivity === 0 && agentRegistry[agentName] && agentRegistry[agentName].startedAt) {
-      lastActivity = new Date(agentRegistry[agentName].startedAt).getTime();
-    }
+    const lastActivity = getAgentLastActivity(agentId);
+    if (lastActivity === 0) continue;
     
-    if (lastActivity === 0) continue; // No activity and no start time
-
     const age = now - lastActivity;
+    const timeout = (agentId === 'main') ? FLINT_TIMEOUT_MS : SUBAGENT_TIMEOUT_MS;
     
-    if (agentName === 'Flint') {
-      // Flint: 60s timeout
-      if (age < FLINT_TIMEOUT_MS) {
-        status.Flint = 'working';
-      }
-    } else {
-      // Subagent: must be registered + 30s timeout
-      const isRegistered = agentRegistry[agentName] && agentRegistry[agentName].sessionId === sessionId;
-      if (isRegistered && age < SUBAGENT_TIMEOUT_MS) {
-        status[agentName] = 'working';
-      }
+    if (age < timeout) {
+      status[agentName] = 'working';
     }
   }
 
@@ -270,7 +301,9 @@ function getAgentStatus() {
 // FILE WATCHER (for real-time updates)
 // ============================================================================
 
-const watcher = chokidar.watch(SESSIONS_DIR, {
+// Watch ALL agent session directories
+const allSessionDirs = Object.values(AGENT_SESSION_DIRS);
+const watcher = chokidar.watch(allSessionDirs, {
   persistent: true,
   usePolling: true,
   interval: 1000,
@@ -337,6 +370,44 @@ function saveActivity(activity) {
   } catch (err) {
     console.error('Error saving activity:', err);
   }
+}
+
+// ===== AGENT COMMUNICATIONS LOG =====
+const agentCommsFile = path.join(__dirname, 'data', 'agent-comms.json');
+
+function loadAgentComms() {
+  try {
+    if (fs.existsSync(agentCommsFile)) {
+      return JSON.parse(fs.readFileSync(agentCommsFile, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error loading agent-comms:', err);
+  }
+  return [];
+}
+
+function saveAgentComms(comms) {
+  try {
+    fs.writeFileSync(agentCommsFile, JSON.stringify(comms, null, 2));
+  } catch (err) {
+    console.error('Error saving agent-comms:', err);
+  }
+}
+
+function logAgentComm(agentComms) {
+  const comms = loadAgentComms();
+  const entry = {
+    id: Date.now(),
+    timestamp: new Date().toISOString(),
+    ...agentComms
+  };
+  comms.push(entry);
+  // Keep last 500 entries
+  if (comms.length > 500) {
+    comms.shift();
+  }
+  saveAgentComms(comms);
+  return entry.id;
 }
 
 function logActivity(agent, action, taskText, extra = {}) {
@@ -540,6 +611,53 @@ const server = http.createServer((req, res) => {
     const modelStats = (agentsData && agentsData.modelStats) || {};
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(modelStats));
+    return;
+  }
+
+  // API: Agent Comms - POST (log a message)
+  if (url.pathname === '/api/agent-comms' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const { from, to, type, message, sessionKey } = JSON.parse(body);
+        if (!from || !to || !type || !message) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Missing required fields: from, to, type, message' }));
+          return;
+        }
+        const id = logAgentComm({ from, to, type, message, sessionKey });
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok', id }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return;
+  }
+
+  // API: Agent Comms - GET (retrieve log)
+  if (url.pathname === '/api/agent-comms' && req.method === 'GET') {
+    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const fromFilter = url.searchParams.get('from');
+    const sinceFilter = url.searchParams.get('since');
+    
+    let comms = loadAgentComms();
+    
+    // Apply filters
+    if (fromFilter) {
+      comms = comms.filter(c => c.from === fromFilter);
+    }
+    if (sinceFilter) {
+      const since = new Date(sinceFilter).getTime();
+      comms = comms.filter(c => new Date(c.timestamp).getTime() > since);
+    }
+    
+    // Return newest first, limited
+    const result = comms.reverse().slice(0, limit);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
     return;
   }
 

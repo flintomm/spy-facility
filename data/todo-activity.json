@@ -1,576 +1,466 @@
 [
   {
-    "time": "2026-02-14T06:41:01.297Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Team achievement bonus (+100)",
-    "exp": 100
-  },
-  {
-    "time": "2026-02-14T06:38:40.505Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Team achievement bonus (+100)",
-    "exp": 100
-  },
-  {
-    "time": "2026-02-14T04:02:36.079Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Test delete task"
-  },
-  {
-    "time": "2026-02-14T04:02:38.736Z",
-    "agent": "Flint",
-    "action": "deleted task",
-    "task": "Test delete task"
-  },
-  {
-    "time": "2026-02-14T04:02:49.486Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Permission test task"
-  },
-  {
-    "time": "2026-02-14T04:02:49.513Z",
-    "agent": "Forge",
-    "action": "added task",
-    "task": "Forge test task"
-  },
-  {
-    "time": "2026-02-14T04:02:53.276Z",
-    "agent": "Forge",
-    "action": "deleted task",
-    "task": "Forge test task"
-  },
-  {
-    "time": "2026-02-14T04:08:01.311Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Test delete - should be removed"
-  },
-  {
-    "time": "2026-02-14T04:08:05.834Z",
-    "agent": "Flint",
-    "action": "deleted task",
-    "task": "Test delete - should be removed"
-  },
-  {
-    "time": "2026-02-14T04:25:29.794Z",
-    "agent": "Flint",
-    "action": "deleted task",
-    "task": "Interview remaining agent candidates"
-  },
-  {
-    "time": "2026-02-14T04:27:47.792Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Implement custom overlay modal for Add Task (replace browser prompt)"
-  },
-  {
-    "time": "2026-02-14T04:27:47.793Z",
-    "agent": "Flint",
-    "action": "delegated task",
-    "task": "Implement custom overlay modal for Add Task (replace browser prompt)",
-    "target": "Cipher"
-  },
-  {
-    "time": "2026-02-14T04:29:05.631Z",
-    "agent": "Flint",
-    "action": "deleted task",
-    "task": "Set up Notion integration"
-  },
-  {
-    "time": "2026-02-14T04:47:09.688Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Test visibility: remove debug console.logs from index.html"
-  },
-  {
-    "time": "2026-02-14T04:47:09.689Z",
-    "agent": "Flint",
-    "action": "delegated task",
-    "task": "Test visibility: remove debug console.logs from index.html",
-    "target": "Cipher"
-  },
-  {
-    "time": "2026-02-14T05:00:34.049Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Test complete behavior"
-  },
-  {
-    "time": "2026-02-14T05:00:37.742Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "Test complete behavior"
-  },
-  {
-    "time": "2026-02-14T05:01:59.178Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Final verification test"
-  },
-  {
-    "time": "2026-02-14T05:01:59.238Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "Final verification test"
-  },
-  {
-    "time": "2026-02-14T05:08:49.499Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "Decide Cipher model swap (Kimi → ?)"
-  },
-  {
-    "time": "2026-02-14T05:09:24.774Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "Commit 19+ uncommitted files in spy-facility"
-  },
-  {
-    "time": "2026-02-14T05:09:27.124Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "Permission test task"
-  },
-  {
-    "time": "2026-02-14T05:09:49.725Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "Implement custom overlay modal for Add Task (replace browser prompt)"
-  },
-  {
-    "time": "2026-02-14T06:17:30.800Z",
-    "agent": "Flint",
-    "action": "deleted task",
-    "task": "Test visibility: remove debug console.logs from index.html"
-  },
-  {
-    "time": "2026-02-14T06:24:55.187Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Test EXP activity logging",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:24:55.248Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "Test EXP activity logging",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:08.923Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "EXP test task",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:08.963Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "EXP test task",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:23.397Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "EXP test 2",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:23.443Z",
-    "agent": "Flint",
-    "action": "completed task",
-    "task": "EXP test 2",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.188Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 1",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.229Z",
+    "time": "2026-02-15T20:25:00Z",
     "agent": "Cipher",
     "action": "completed task",
-    "task": "Level test 1",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.240Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 2",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.272Z",
-    "agent": "Cipher",
-    "action": "completed task",
-    "task": "Level test 2",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.284Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 3",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.317Z",
-    "agent": "Cipher",
-    "action": "completed task",
-    "task": "Level test 3",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.328Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 4",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.359Z",
-    "agent": "Cipher",
-    "action": "completed task",
-    "task": "Level test 4",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.369Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 5",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.401Z",
-    "agent": "Cipher",
-    "action": "completed task",
-    "task": "Level test 5",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.411Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 6",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.443Z",
-    "agent": "Cipher",
-    "action": "completed task",
-    "task": "Level test 6",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.453Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 7",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.486Z",
-    "agent": "Cipher",
-    "action": "completed task",
-    "task": "Level test 7",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T06:34:37.496Z",
-    "agent": "Flint",
-    "action": "added task",
-    "task": "Level test 8",
-    "exp": 0
-  },
-  {
-    "time": "2026-02-14T06:34:37.527Z",
-    "agent": "Cipher",
-    "action": "completed task",
-    "task": "Level test 8",
-    "exp": 50
-  },
-  {
-    "time": "2026-02-14T14:21:30.736Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Mobile zoom + pan fix",
+    "task": "LONG TASK: Cipher 30-second test",
     "exp": 50,
-    "grantedBy": "Stealth"
+    "model": "minimax"
   },
   {
-    "time": "2026-02-14T14:31:19.012Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Activity feed fix",
-    "exp": 25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-14T16:35:35.985Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Telegram activity fix",
-    "exp": 25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-14T16:35:40.454Z",
+    "time": "2026-02-15T19:15:00Z",
     "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Facility status improvements",
-    "exp": 25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-14T16:35:44.226Z",
-    "agent": "Atlas",
-    "action": "received bonus EXP",
-    "task": "Facility status improvements",
-    "exp": 25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T00:27:33.536Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Fixed agent session mapping to show subagent status correctly",
-    "exp": 25,
-    "grantedBy": "System"
-  },
-  {
-    "time": "2026-02-15T00:32:00.550Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Portrait layout shipped - rooms in 2x2 grid, lounge repositioned, mobile-friendly",
-    "exp": 50,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T00:32:00.602Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Status bar layout issues - Lucky card overlap, wrong card sizing",
-    "exp": -25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T00:32:00.653Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Random units in quarters - need cleanup",
-    "exp": -25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T01:32:18.240Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Fixed CLI timeout from 5min to 30sec for accurate status",
-    "exp": 25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T01:39:59.118Z",
-    "agent": "Cipher",
-    "action": "correction applied",
-    "task": "Test correction wording",
-    "exp": -10,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T01:40:13.089Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Revert test correction",
-    "exp": 10,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T02:39:06.967Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Led portrait remodel, status detection v3, team trim, bug triage across full session",
-    "exp": 50,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T02:39:07.020Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Shipped portrait-first 800x1000 layout via delegation — 2x2 room grid, clean delivery",
-    "exp": 50,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T02:39:07.071Z",
-    "agent": "Atlas",
-    "action": "received bonus EXP",
-    "task": "Architecture support on two-floor stacked layout and canvas proportion planning",
-    "exp": 25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T02:39:52.213Z",
-    "agent": "Atlas",
-    "action": "correction applied",
-    "task": "Correction: EXP not yet earned — no active spawn or contribution this session",
-    "exp": -25,
-    "grantedBy": "Stealth"
-  },
-  {
-    "time": "2026-02-15T12:28:24.830Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Model tracking implementation",
+    "action": "Shipped: Stealth Approval Pane UI",
+    "task": "Create Stealth Approval Pane UI",
     "exp": 50,
     "grantedBy": "Flint",
-    "model": "claude-opus"
+    "model": "minimax"
   },
   {
-    "time": "2026-02-15T12:28:38.152Z",
+    "time": "2026-02-15T19:15:00Z",
+    "agent": "Cipher",
+    "action": "Shipped: Onboarded Vera (Interior Design)",
+    "task": "Onboard Vera (Interior Design)",
+    "exp": 50,
+    "grantedBy": "Flint",
+    "model": "minimax"
+  },
+  {
+    "time": "2026-02-15T19:15:00Z",
+    "agent": "Cipher",
+    "action": "Shipped: Onboarded Scout (Researcher/Model Procurement)",
+    "task": "Onboard Scout (Researcher/Model Procurement)",
+    "exp": 50,
+    "grantedBy": "Flint",
+    "model": "minimax"
+  },
+  {
+    "time": "2026-02-15T18:48:00Z",
     "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Test kimi model",
+    "action": "Researched: Orchestrator patterns — event-driven, hierarchical, CEO principles",
+    "task": "",
     "exp": 25,
     "grantedBy": "Flint",
     "model": "kimi"
   },
   {
-    "time": "2026-02-15T12:28:38.206Z",
-    "agent": "Atlas",
-    "action": "correction applied",
-    "task": "Test bug penalty",
-    "exp": -25,
-    "grantedBy": "Flint",
-    "model": "gpt-5"
-  },
-  {
-    "time": "2026-02-15T12:29:48.577Z",
-    "agent": "Atlas",
-    "action": "received bonus EXP",
-    "task": "Reverting test data",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T12:29:52.433Z",
+    "time": "2026-02-15T17:42:00Z",
     "agent": "Flint",
-    "action": "correction applied",
-    "task": "Reverting test data",
-    "exp": -25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T13:49:56.115Z",
-    "agent": "Atlas",
-    "action": "received bonus EXP",
-    "task": "Sequential status test verification — clean alternation WORKING/IDLE",
+    "action": "Fixed: Scrub's missing quarters",
+    "task": "",
     "exp": 25,
     "grantedBy": "Flint",
-    "model": "unknown"
+    "model": "kimi"
   },
   {
-    "time": "2026-02-15T13:49:56.167Z",
+    "time": "2026-02-15T18:05:34Z",
     "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Sequential status test verification — clean alternation WORKING/IDLE",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T13:49:56.219Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Sequential status test orchestration — template fix + status detection sealed",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T14:11:17.957Z",
-    "agent": "Vera",
-    "action": "received bonus EXP",
-    "task": "Successful onboarding — persona, memory, skills files created, activation verified",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T14:11:18.010Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Created onboarding system + absorbed OpenClaw multi-agent docs, Vera first success",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T14:18:06.070Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Status bar spacing fix — task text breathing room",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T14:18:06.123Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Onboarding system success — Vera activated with proper persona",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T14:27:22.491Z",
-    "agent": "Flint",
-    "action": "received bonus EXP",
-    "task": "Vera desk relocation — moved to pod 2 next to Cipher, removed Briefing Room custom setup",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T14:27:22.542Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Desk positioning attempt — identified AGENTS array structure",
-    "exp": 10,
-    "grantedBy": "Flint",
-    "model": "unknown"
-  },
-  {
-    "time": "2026-02-15T14:44:34.047Z",
-    "agent": "Cipher",
-    "action": "received bonus EXP",
-    "task": "Quarters items implementation — 15 sprites, hover tooltips, warm glow effects",
+    "action": "Shipped: Activity log format improvement",
+    "task": "",
     "exp": 50,
     "grantedBy": "Flint",
-    "model": "unknown"
+    "model": "minimax"
   },
   {
-    "time": "2026-02-15T14:44:34.100Z",
-    "agent": "Vera",
-    "action": "received bonus EXP",
-    "task": "Quarters design spec — warm lighting, item positioning, visual guidelines",
-    "exp": 25,
-    "grantedBy": "Flint",
-    "model": "unknown"
+    "time": "2026-02-15T19:26:32.644Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Test validation task",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:26:45.146Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "Test validation task",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:26:53.553Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Onboard Scout (Test)",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:26:57.913Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "Onboard Scout (Test)",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:33:52.696Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Test task for verification",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:36:56.307Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Onboard Scout (Researcher/Model Procurement)",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:36:56.324Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Onboard Vera (Interior Design)",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:36:56.341Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Create Stealth Approval Pane UI",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:36:56.355Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Test task for verification",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:37:02.197Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Onboard Scout (Researcher)",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:37:09.110Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Onboard Vera (Interior Design)",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:37:09.127Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Create Stealth Approval Pane",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:52:00.407Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Test delete permission",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:52:06.909Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Test delete permission",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:52:06.932Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:52:41.379Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Test T4 denial",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:52:48.539Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Test T4 denial",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:52:48.561Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:53:14.837Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Permission test task",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:53:22.475Z",
+    "agent": "Cipher",
+    "action": "deleted task",
+    "task": "Permission test task",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:53:33.410Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Test complete action",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T19:53:37.925Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "Test complete action",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:05:46.888Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Onboard Vera (Interior Design)",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:05:46.902Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Onboard Vera (Interior Design)",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:08:44.676Z",
+    "agent": "Flint",
+    "action": "deleted task",
+    "task": "Onboard Vera (Interior Design)",
+    "exp": -25,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:08:44.691Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "UPDATE Vera agent files — refresh SOUL.md, IDENTITY.md, MEMORY.md, SKILLS.md with current persona",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:10:00.000Z",
+    "agent": "Cipher",
+    "action": "completed task",
+    "task": "UPDATE Vera agent files — refresh SOUL.md, IDENTITY.md, MEMORY.md, SKILLS.md with current persona",
+    "exp": 50,
+    "model": "minimax"
+  },
+  {
+    "time": "2026-02-15T20:16:36.660Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "UPDATE Vera agent files — refresh SOUL.md, IDENTITY.md, MEMORY.md, SKILLS.md with current persona",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:18:51.281Z",
+    "agent": "Flint",
+    "action": "requested more info on proposal",
+    "task": "Atlas — Blueprint QA automation",
+    "exp": 0,
+    "model": "claude-sonnet",
+    "target": "Atlas",
+    "cost": "$6.20"
+  },
+  {
+    "time": "2026-02-15T20:24:42.339Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "LONG TASK: Cipher 30-second test",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:31:53.205Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "LONG TASK: Cipher 30-second test",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:32:25.056Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "Create Stealth Approval Pane",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:33:57.353Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Scrub — Run 20-second security scan",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:33:57.396Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Scout — Research for 20 seconds",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:34:06.241Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Vera — Design review for 20 seconds",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:41:31.393Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Scout — 30 second research on model pricing",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:43:32.373Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Scout — Quick 20 second status test",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:43:58.069Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Scout — Count 1 to 30 slowly, report each number",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:45:25.245Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Scrub — Run 20-second security scan",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:45:25.263Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Scout — Research for 20 seconds",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:45:25.273Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Vera — Design review for 20 seconds",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:45:25.283Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Scout — 30 second research on model pricing",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:45:25.294Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Scout — Quick 20 second status test",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:45:25.306Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[TEST] Scout — Count 1 to 30 slowly, report each number",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T20:50:49.486Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[CRITICAL] Properly onboard Scrub, Scout, and Vera with isolated credentials. Follow updated CHECKLIST.md Step 4 (Multi-Agent Setup). Each needs: 1) ~/.openclaw/agents/{name}/agent/ directory, 2) auth-profiles.json, 3) openclaw.json entry with unique agentDir, 4) Test cron job to verify agent:{name}:cron: session keys. Report: \"Cipher checking in — completed isolated setup for [who]\" after each.",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T21:19:51.234Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "Study pixel art fundamentals — read https://gamemaker.io/en/blog/make-pixel-art-2d-games and https://www.pixilart.com/. Create notes on: 1) Color theory for limited palettes, 2) Sprite sizing and scaling, 3) Animation basics for 2D games, 4) Best tools/workflows. Report: \"Vera checking in — [key learnings about pixel art]\"",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T21:20:43.212Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[CRITICAL] Properly onboard Scrub, Scout, and Vera with isolated credentials. Follow updated CHECKLIST.md Step 4 (Multi-Agent Setup). Each needs: 1) ~/.openclaw/agents/{name}/agent/ directory, 2) auth-profiles.json, 3) openclaw.json entry with unique agentDir, 4) Test cron job to verify agent:{name}:cron: session keys. Report: \"Cipher checking in — completed isolated setup for [who]\" after each.",
+    "exp": 50,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T21:32:27.731Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[CRITICAL] Fix facility visual accuracy — overlapping furniture, agents walking through walls, desk positioning. Review spy-facility/index.html rendering logic. Check: 1) Agent sprite collision detection with walls/furniture, 2) Desk/item positioning without overlap, 3) Proper z-index/layering for depth, 4) Walking path validation. Deliver updated rendering code with fixes.",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T21:43:48.470Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Scout — 20 second status test. Count 1-20 slowly.",
+    "exp": 0,
+    "model": null
+  },
+  {
+    "time": "2026-02-15T21:47:18.645Z",
+    "agent": "Flint",
+    "action": "added task",
+    "task": "[TEST] Scout — 30 second research on canvas pixel art",
+    "exp": 0,
+    "model": null
   }
 ]

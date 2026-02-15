@@ -131,15 +131,52 @@ if (!ms.agents[agentName]) ms.agents[agentName] = { tasks: 0, totalExp: 0 };
 ms.agents[agentName].tasks += 1;
 ms.agents[agentName].totalExp += expDelta;
 
+// Generate specific action description based on what was done
+function generateActionText(reason, expDelta) {
+  if (expDelta < 0) return 'correction applied';
+  
+  const r = reason.toLowerCase();
+  
+  // If reason already has a clear action prefix, use it as-is
+  if (r.startsWith('onboard') || r.startsWith('shipped') || r.startsWith('implemented') ||
+      r.startsWith('fixed') || r.startsWith('refactored') || r.startsWith('designed') ||
+      r.startsWith('tested') || r.startsWith('created') || r.startsWith('built')) {
+    return reason;  // Use the reason as the full action
+  }
+  
+  // Otherwise, categorize and wrap it
+  if (r.includes('onboard') || r.includes('activated')) {
+    return 'Onboarded: ' + reason;
+  }
+  if (r.includes('shipped') || r.includes('implemented') || r.includes('built')) {
+    return 'Shipped: ' + reason;
+  }
+  if (r.includes('fixed') || r.includes('bug')) {
+    return 'Fixed: ' + reason;
+  }
+  if (r.includes('refactor') || r.includes('cleaned')) {
+    return 'Refactored: ' + reason;
+  }
+  if (r.includes('design') || r.includes('spec') || r.includes('architecture')) {
+    return 'Designed: ' + reason;
+  }
+  if (r.includes('test') || r.includes('verified')) {
+    return 'Tested: ' + reason;
+  }
+  
+  return 'Implemented: ' + reason;
+}
+
 saveJson(agentsPath, agentsData);
 
 const activity = loadJson(activityPath, []);
-const actionText = expDelta >= 0 ? 'received bonus EXP' : 'correction applied';
+// generateActionText already returns the full action description
+const actionText = generateActionText(reason, expDelta);
 activity.push({
   time: new Date().toISOString(),
   agent: agentName,
   action: actionText,
-  task: reason,
+  task: '',  // Task embedded in action for display
   exp: expDelta,
   grantedBy,
   model: model
