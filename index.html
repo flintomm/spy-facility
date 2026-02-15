@@ -644,12 +644,11 @@ function initCollisionBoxes() {
   COLLISION_BOXES.push({ x: 50, y: 600, w: 40, h: 24 }); // Coffee table
   
   // Add collision boxes for Scout & Vera's desks (custom positions)
-  // Scout: deskPos (363, 135), Vera: deskPos (453, 135)
-  COLLISION_BOXES.push({ x: 363, y: 135, w: 80, h: 18 }); // Scout's desk
-  COLLISION_BOXES.push({ x: 453, y: 135, w: 80, h: 18 }); // Vera's desk
+  // Scout: deskPos (375, 155), Vera: deskPos (465, 170) in AGENTS config
+  // Agent sprite sits at deskPos, collision accounts for desk + agent offset (-12, -20)
+  COLLISION_BOXES.push({ x: 363, y: 135, w: 80, h: 18 }); // Scout's desk (deskPos -12, -20)
+  COLLISION_BOXES.push({ x: 453, y: 150, w: 80, h: 18 }); // Vera's desk (deskPos -12, -20)
 }
-
-initCollisionBoxes();
 
 // Check if a point collides with any obstacle
 function checkCollision(x, y, radius = 8) {
@@ -819,7 +818,8 @@ const AGENTS = [
     quartersItems:['bed'],
     companion:{ name:'Lucky', type:'boston_terrier' },
     status:'idle',
-    level:5, exp:1125, nextLevel:1500, expProgress:0.75
+    level:5, exp:1125, nextLevel:1500, expProgress:0.75,
+    idleLocations: ['pod', 'quarters', 'briefing', 'galley']
   },
   {
     name:'Cipher', role:'Systems', color:'#00D4FF', podIndex:1,
@@ -827,7 +827,8 @@ const AGENTS = [
     quartersItems:['bed'],
     companion:null,
     status:'idle',
-    level:2, exp:500, nextLevel:750, expProgress:0.66
+    level:2, exp:500, nextLevel:750, expProgress:0.66,
+    idleLocations: ['pod', 'quarters', 'rec']
   },
   {
     name:'Scrub', role:'Security', color:'#8B0000', podIndex:2,
@@ -835,25 +836,28 @@ const AGENTS = [
     quartersItems:['bed'],
     companion:null,
     status:'idle',
-    level:1, exp:0, nextLevel:500, expProgress:0
+    level:1, exp:0, nextLevel:500, expProgress:0,
+    idleLocations: ['pod', 'quarters', 'briefing', 'corridor']
   },
   {
-    name:'Scout', role:'Researcher', color:'#9B59B6', podIndex:-1, // No pod - uses custom deskPos
+    name:'Scout', role:'Researcher', color:'#9B59B6', podIndex:-1,
     deskItems:['notebook','coffee'],
     quartersItems:['bed'],
-    deskPos: { x: 375, y: 155 }, // Lower position for shared office
+    deskPos: { x: 375, y: 155 },
     companion:null,
     status:'idle',
-    level:1, exp:0, nextLevel:500, expProgress:0
+    level:1, exp:0, nextLevel:500, expProgress:0,
+    idleLocations: ['desk', 'quarters', 'rec', 'briefing']
   },
   {
-    name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:-1, // No pod - uses custom deskPos
+    name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:-1,
     deskItems:['succulent','sketchbook'],
     quartersItems:['bed'],
-    deskPos: { x: 465, y: 155 }, // Side-by-side with Scout
+    deskPos: { x: 465, y: 170 },
     companion:null,
     status:'idle',
-    level:1, exp:0, nextLevel:500, expProgress:0
+    level:1, exp:0, nextLevel:500, expProgress:0,
+    idleLocations: ['desk', 'quarters', 'rec', 'galley']
   }
 ];
 
@@ -1605,6 +1609,7 @@ function drawQuarterItem(c, itemType, x, y) {
 
 // Track quarter item positions for hover detection
 let quarterItemPositions = [];
+initCollisionBoxes(); // Initialize collision after all variables defined
 
 function getQuarterItemTooltip(itemType) {
   const tooltips = {
@@ -2557,6 +2562,7 @@ class AgentEntity {
     this.facing = 1; // 1=right, -1=left
     this.speed = 55;
     this.expanded = false; // Status Board card expanded?
+    this.idleIndex = Math.floor(Math.random() * 4); // Random start for variety
   }
   getTargetPos() {
     // If meeting is active, use meeting location position
@@ -2704,23 +2710,76 @@ class AgentEntity {
       this.target = this.getTargetPos();
       return;
     }
+    
+    // Get agent config
+    const agentCfg = AGENTS.find(a => a.name === this.name);
+    const idleLocs = agentCfg?.idleLocations || ['pod', 'quarters'];
+    
+    // Pick next idle location in rotation
+    this.idleIndex = (this.idleIndex || 0) % idleLocs.length;
+    const locType = idleLocs[this.idleIndex];
+    this.idleIndex++;
+    
     this.state = 'wandering';
-    const spots = [
-      // Rooms (2x2 grid)
-      { x: ROOMS[0].x+80, y: ROOMS[0].y+80 },
-      { x: ROOMS[1].x+120, y: ROOMS[1].y+80 },
-      { x: ROOMS[2].x+100, y: ROOMS[2].y+80 },
-      { x: ROOMS[3].x+100, y: ROOMS[3].y+80 },
-      // Lounge (below pods)
-      { x: LOUNGE_X+100, y: LOUNGE_Y+60 },
-      { x: LOUNGE_X+300, y: LOUNGE_Y+100 },
-      { x: LOUNGE_X+500, y: LOUNGE_Y+80 },
-      // Corridors
-      { x: 200, y: ROOM_Y+ROOM_H*2+ROOM_GAP+6 },
-      { x: 500, y: ROOM_Y+ROOM_H*2+ROOM_GAP+6 },
-      { x: 400, y: POD_Y+POD_H+10 },
-    ];
-    this.target = spots[Math.random()*spots.length|0];
+    
+    // Define location coordinates based on agent
+    const podIndex = agentCfg?.podIndex ?? -1;
+    const deskPos = agentCfg?.deskPos;
+    
+    let targetSpot;
+    switch(locType) {
+      case 'pod':
+        if (podIndex >= 0) {
+          const pod = PODS[podIndex];
+          targetSpot = { x: pod.x + pod.w/2, y: pod.y + pod.h/2 };
+        } else if (deskPos) {
+          targetSpot = { x: deskPos.x, y: deskPos.y };
+        } else {
+          targetSpot = { x: 400, y: 200 }; // fallback
+        }
+        break;
+      case 'desk':
+        if (deskPos) {
+          targetSpot = { x: deskPos.x, y: deskPos.y };
+        } else if (podIndex >= 0) {
+          const pod = PODS[podIndex];
+          targetSpot = { x: pod.x + pod.w/2, y: pod.y + pod.h/2 };
+        } else {
+          targetSpot = { x: 400, y: 200 };
+        }
+        break;
+      case 'quarters':
+        // Go to agent's quarters on floor 2
+        const q = QUARTERS.find(q => q.agent === this.name);
+        if (q) {
+          targetSpot = { x: q.spritePos.x, y: q.spritePos.y };
+        } else {
+          targetSpot = { x: 100, y: FLOOR2_Y + 60 };
+        }
+        break;
+      case 'briefing':
+        // Briefing room center
+        targetSpot = { x: ROOMS[3].x + 60, y: ROOMS[3].y + 60 };
+        break;
+      case 'galley':
+        // Galley/kitchen area
+        targetSpot = { x: ROOMS[2].x + 80, y: ROOMS[2].y + 60 };
+        break;
+      case 'rec':
+        // Recreation lounge
+        targetSpot = { x: LOUNGE_X + 150, y: LOUNGE_Y + 80 };
+        break;
+      case 'corridor':
+        // Main corridor
+        targetSpot = { x: 300 + Math.random() * 200, y: POD_Y + POD_H + 20 };
+        break;
+      default:
+        // Random spot as fallback
+        targetSpot = { x: 200 + Math.random() * 400, y: 150 + Math.random() * 200 };
+    }
+    
+    this.target = targetSpot;
+    this.stateTimer = 10000 + Math.random() * 15000; // Stay 10-25 seconds
   }
   draw(ctx) {
     const s = 3;
@@ -5167,6 +5226,7 @@ pollStatus(); // Fetch real status immediately on load
 // ===== GAME LOOP =====
 let lastTime = 0;
 function gameLoop(timestamp) {
+  console.log('gameLoop running'); // DEBUG
   const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
   lastTime = timestamp;
 
@@ -5203,6 +5263,11 @@ function gameLoop(timestamp) {
   requestAnimationFrame(gameLoop);
 }
 requestAnimationFrame(gameLoop);
+
+// Error logging for debugging
+window.addEventListener('error', (e) => {
+  console.error('Global error:', e.message, e.filename, e.lineno);
+});
 </script>
 </body>
 </html>

@@ -11,10 +11,10 @@
   {
     "id": 1771191147730,
     "text": "[CRITICAL] Fix facility visual accuracy — overlapping furniture, agents walking through walls, desk positioning. Review spy-facility/index.html rendering logic. Check: 1) Agent sprite collision detection with walls/furniture, 2) Desk/item positioning without overlap, 3) Proper z-index/layering for depth, 4) Walking path validation. Deliver updated rendering code with fixes.",
-    "done": false,
+    "done": true,
     "createdAt": "2026-02-15T21:32:27.730Z",
     "createdBy": "Flint",
     "assignedTo": "Cipher",
-    "completedAt": null
+    "completedAt": "2026-02-15T23:15:00Z"
   }
 ]

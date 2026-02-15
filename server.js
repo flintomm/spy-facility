@@ -4,7 +4,7 @@ const path = require('path');
 const chokidar = require('chokidar');
 
 const MESHNET_IP = process.env.MESHNET_IP || '0.0.0.0';
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 const SERVER_START_TIME = Date.now();
 
@@ -792,6 +792,13 @@ const server = http.createServer((req, res) => {
     const map = loadAgentSessionMap();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(map));
+    return;
+  }
+
+  // API: Proposals - GET (approval pane)
+  if (url.pathname === '/api/proposals' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify([])); // Empty for now
     return;
   }
 
