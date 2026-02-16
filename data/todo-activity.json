@@ -492,5 +492,12 @@
     "exp": 50,
     "grantedBy": "Flint",
     "model": "unknown"
+  },
+  {
+    "time": "2026-02-16T02:52:05.567Z",
+    "agent": "Flint",
+    "action": "completed task",
+    "task": "[CRITICAL] Fix facility visual accuracy — overlapping furniture, agents walking through walls, desk positioning. Review spy-facility/index.html rendering logic. Check: 1) Agent sprite collision detection with walls/furniture, 2) Desk/item positioning without overlap, 3) Proper z-index/layering for depth, 4) Walking path validation. Deliver updated rendering code with fixes.",
+    "exp": 50
   }
 ]

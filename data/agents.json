@@ -3,9 +3,9 @@
     "Flint": {
       "name": "Flint",
       "tier": 1,
-      "level": 2,
-      "exp": 725,
-      "nextLevel": 750,
+      "level": 3,
+      "exp": 775,
+      "nextLevel": 1125,
       "rank": "Director",
       "color": "#FF8C00",
       "model": "claude-opus-4-5",
