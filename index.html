@@ -629,25 +629,31 @@ function initCollisionBoxes() {
   COLLISION_BOXES.push({ x: spine.x + spine.w, y: spine.y, w: 4, h: spine.h });
   
   // Add room furniture collision boxes (desks, couches, tables)
-  // R&D Lab
-  COLLISION_BOXES.push({ x: 60, y: 70, w: 100, h: 22 }); // Workbench
-  // Command room
-  COLLISION_BOXES.push({ x: 450, y: 60, w: 100, h: 22 }); // Big desk
-  COLLISION_BOXES.push({ x: 580, y: 100, w: 70, h: 25 }); // Couch
-  // Galley
-  COLLISION_BOXES.push({ x: 55, y: 100, w: 140, h: 16 }); // Counter
-  // Briefing room
-  COLLISION_BOXES.push({ x: 480, y: 80, w: 120, h: 22 }); // Conference table
-  // Lounge
-  COLLISION_BOXES.push({ x: 50, y: 690, w: 80, h: 25 }); // Couch
-  COLLISION_BOXES.push({ x: 340, y: 600, w: 80, h: 40 }); // Ping pong table
-  COLLISION_BOXES.push({ x: 50, y: 600, w: 40, h: 24 }); // Coffee table
+  // R&D Lab - workbench at r.x+30, r.y+20 = 70, 60
+  COLLISION_BOXES.push({ x: 70, y: 60, w: 100, h: 22 });
+  // Command room - big desk at r.x+30, r.y+20 = 450, 60; couch at r.x+160, r.y+60 = 580, 100
+  COLLISION_BOXES.push({ x: 450, y: 60, w: 100, h: 22 });
+  COLLISION_BOXES.push({ x: 580, y: 100, w: 70, h: 25 });
+  // Galley - counter at r.x+15, r.y+60 = 55, 280
+  COLLISION_BOXES.push({ x: 55, y: 280, w: 140, h: 16 });
+  // Briefing room - table at r.x+60, r.y+40 = 480, 260
+  COLLISION_BOXES.push({ x: 480, y: 260, w: 120, h: 22 });
+  // Lounge - matched to render positions (LOUNGE_X=10, LOUNGE_Y=540)
+  // Couch drawn at: LOUNGE_X+20=30, LOUNGE_Y+150=690
+  COLLISION_BOXES.push({ x: 30, y: 690, w: 80, h: 25 });
+  // Ping pong drawn at: LOUNGE_X+320=330, LOUNGE_Y+60=600
+  COLLISION_BOXES.push({ x: 330, y: 600, w: 70, h: 36 });
+  // Coffee table drawn at: LOUNGE_X+30=40, LOUNGE_Y+110=650
+  COLLISION_BOXES.push({ x: 40, y: 650, w: 40, h: 24 });
   
   // Add collision boxes for Scout & Vera's desks (custom positions)
-  // Scout: deskPos (375, 155), Vera: deskPos (465, 170) in AGENTS config
-  // Agent sprite sits at deskPos, collision accounts for desk + agent offset (-12, -20)
-  COLLISION_BOXES.push({ x: 363, y: 135, w: 80, h: 18 }); // Scout's desk (deskPos -12, -20)
-  COLLISION_BOXES.push({ x: 453, y: 150, w: 80, h: 18 }); // Vera's desk (deskPos -12, -20)
+  // Scout: deskPos (160, 280), desk drawn at same pos, 80x18
+  // Vera: deskPos (560, 280), desk drawn at same pos, 80x18
+  // Chair is at y+30 from desk
+  COLLISION_BOXES.push({ x: 160, y: 280, w: 80, h: 18 }); // Scout's desk
+  COLLISION_BOXES.push({ x: 160, y: 308, w: 18, h: 8 }); // Scout's chair
+  COLLISION_BOXES.push({ x: 560, y: 280, w: 80, h: 18 }); // Vera's desk
+  COLLISION_BOXES.push({ x: 560, y: 308, w: 18, h: 8 }); // Vera's chair
 }
 
 // Check if a point collides with any obstacle
@@ -843,7 +849,7 @@ const AGENTS = [
     name:'Scout', role:'Researcher', color:'#9B59B6', podIndex:-1,
     deskItems:['notebook','coffee'],
     quartersItems:['bed'],
-    deskPos: { x: 375, y: 155 },
+    deskPos: { x: 160, y: 280 },
     companion:null,
     status:'idle',
     level:1, exp:0, nextLevel:500, expProgress:0,
@@ -853,7 +859,7 @@ const AGENTS = [
     name:'Vera', role:'Interior Designer', color:'#D4A574', podIndex:-1,
     deskItems:['succulent','sketchbook'],
     quartersItems:['bed'],
-    deskPos: { x: 465, y: 170 },
+    deskPos: { x: 560, y: 280 },
     companion:null,
     status:'idle',
     level:1, exp:0, nextLevel:500, expProgress:0,
@@ -975,9 +981,9 @@ function drawWalls(c, room) {
   rect(c, doorX + doorW, y+h-t, (x+w) - (doorX+doorW), t, C.wallTop);
   // Trim line
   rect(c, x, y+t, w, 1, C.wallTrim);
-  // Room label
-  c.fillStyle = C.wallAccent;
-  c.font = '8px "JetBrains Mono"';
+  // Room label (make it more visible)
+  c.fillStyle = '#5A7A9A';
+  c.font = 'bold 10px "JetBrains Mono"';
   c.fillText(room.name, x + 10, y + 14);
 }
 
@@ -1910,10 +1916,10 @@ function renderLounge(c) {
   const doorX = x + 20;
   rect(c, x, y+h-5, doorX-x, 5, C.wallTop);
   rect(c, doorX+doorW, y+h-5, (x+w)-(doorX+doorW), 5, C.wallTop);
-  // Labels
-  c.fillStyle = C.wallAccent;
-  c.font = '8px "JetBrains Mono"';
-  c.fillText('BRIEFING & REC', x+10, y+14);
+  // Labels - make more visible
+  c.fillStyle = '#5A7A9A';
+  c.font = 'bold 10px "JetBrains Mono"';
+  c.fillText('LOUNGE & REC', x+10, y+14);
   // Whiteboard
   drawWhiteboard(c, x+20, y+30);
   // Coffee table
@@ -1983,6 +1989,11 @@ function drawStairs(c, x, y) {
 }
 
 function renderQuarters(c) {
+  // Quarters floor label
+  c.fillStyle = '#5A7A9A';
+  c.font = 'bold 10px "JetBrains Mono"';
+  c.fillText('AGENT QUARTERS - FLOOR 2', 20, FLOOR2_Y - 12);
+  
   quarterItemPositions = []; // Reset each frame
   QUARTERS.forEach(q => drawQuarter(c, q));
 }
@@ -2013,6 +2024,11 @@ function renderOpsCorridors(c) {
   // Walkway in quarters area
   drawFloor(c, 10, FLOOR2_Y - 8, 760, 12);
   drawFloor(c, 10, FLOOR2_Y + QUARTER_H, 760, BAR_Y - FLOOR2_Y - QUARTER_H);
+  
+  // Corridor label
+  c.fillStyle = '#5A7A9A';
+  c.font = 'bold 10px "JetBrains Mono"';
+  c.fillText('MAIN CORRIDOR', 20, POD_Y + POD_H - 5);
 
   renderCorridorFlow(c);
 }
