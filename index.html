@@ -603,30 +603,46 @@ const COLLISION_BOXES = [];
 function initCollisionBoxes() {
   COLLISION_BOXES.length = 0;
   
-  // Add room walls (perimeter of each room)
+  // Add room walls (perimeter of each room) - thinner walls with door gaps
   ROOMS.forEach(room => {
-    // Top wall
-    COLLISION_BOXES.push({ x: room.x, y: room.y - 4, w: room.w, h: 6 });
-    // Bottom wall  
-    COLLISION_BOXES.push({ x: room.x, y: room.y + room.h - 2, w: room.w, h: 6 });
+    // Top wall (with door gap in center)
+    const doorGap = 40;
+    const doorStart = room.x + room.w/2 - doorGap/2;
+    // Left of door
+    if (room.x < doorStart) {
+      COLLISION_BOXES.push({ x: room.x, y: room.y - 2, w: doorStart - room.x, h: 4 });
+    }
+    // Right of door
+    if (room.x + room.w > doorStart + doorGap) {
+      COLLISION_BOXES.push({ x: doorStart + doorGap, y: room.y - 2, w: (room.x + room.w) - (doorStart + doorGap), h: 4 });
+    }
+    // Bottom wall (with door gap)
+    const doorGapBottom = 50;
+    const doorStartB = room.x + room.w/2 - doorGapBottom/2;
+    if (room.x < doorStartB) {
+      COLLISION_BOXES.push({ x: room.x, y: room.y + room.h - 2, w: doorStartB - room.x, h: 4 });
+    }
+    if (room.x + room.w > doorStartB + doorGapBottom) {
+      COLLISION_BOXES.push({ x: doorStartB + doorGapBottom, y: room.y + room.h - 2, w: (room.x + room.w) - (doorStartB + doorGapBottom), h: 4 });
+    }
     // Left wall
-    COLLISION_BOXES.push({ x: room.x - 4, y: room.y, w: 6, h: room.h });
+    COLLISION_BOXES.push({ x: room.x - 2, y: room.y, w: 4, h: room.h });
     // Right wall
-    COLLISION_BOXES.push({ x: room.x + room.w - 2, y: room.y, w: 6, h: room.h });
+    COLLISION_BOXES.push({ x: room.x + room.w - 2, y: room.y, w: 4, h: room.h });
   });
   
-  // Add pod collision boxes
+  // Add pod collision boxes (thinner - just edges, not blocking)
   PODS.forEach((pod, i) => {
-    COLLISION_BOXES.push({ x: pod.x, y: pod.y, w: pod.w, h: 4 }); // Pod top
-    COLLISION_BOXES.push({ x: pod.x, y: pod.y + pod.h - 4, w: pod.w, h: 4 }); // Pod bottom
-    COLLISION_BOXES.push({ x: pod.x - 2, y: pod.y, w: 4, h: pod.h }); // Pod left
-    COLLISION_BOXES.push({ x: pod.x + pod.w - 2, y: pod.y, w: 4, h: pod.h }); // Pod right
+    COLLISION_BOXES.push({ x: pod.x, y: pod.y, w: pod.w, h: 2 }); // Pod top
+    COLLISION_BOXES.push({ x: pod.x, y: pod.y + pod.h - 2, w: pod.w, h: 2 }); // Pod bottom
+    COLLISION_BOXES.push({ x: pod.x - 2, y: pod.y, w: 2, h: pod.h }); // Pod left
+    COLLISION_BOXES.push({ x: pod.x + pod.w, y: pod.y, w: 2, h: pod.h }); // Pod right
   });
   
-  // Add corridor walls
+  // Add corridor walls (thinner)
   const { spine } = CORRIDOR_SEGMENTS;
-  COLLISION_BOXES.push({ x: spine.x - 4, y: spine.y, w: 4, h: spine.h });
-  COLLISION_BOXES.push({ x: spine.x + spine.w, y: spine.y, w: 4, h: spine.h });
+  COLLISION_BOXES.push({ x: spine.x - 2, y: spine.y, w: 2, h: spine.h });
+  COLLISION_BOXES.push({ x: spine.x + spine.w, y: spine.y, w: 2, h: spine.h });
   
   // Add room furniture collision boxes (desks, couches, tables)
   // R&D Lab - workbench at r.x+30, r.y+20 = 70, 60
@@ -646,14 +662,19 @@ function initCollisionBoxes() {
   // Coffee table drawn at: LOUNGE_X+30=40, LOUNGE_Y+110=650
   COLLISION_BOXES.push({ x: 40, y: 650, w: 40, h: 24 });
   
-  // Add collision boxes for Scout & Vera's desks (custom positions)
-  // Scout: deskPos (160, 280), desk drawn at same pos, 80x18
-  // Vera: deskPos (560, 280), desk drawn at same pos, 80x18
-  // Chair is at y+30 from desk
-  COLLISION_BOXES.push({ x: 160, y: 280, w: 80, h: 18 }); // Scout's desk
-  COLLISION_BOXES.push({ x: 160, y: 308, w: 18, h: 8 }); // Scout's chair
-  COLLISION_BOXES.push({ x: 560, y: 280, w: 80, h: 18 }); // Vera's desk
-  COLLISION_BOXES.push({ x: 560, y: 308, w: 18, h: 8 }); // Vera's chair
+  // Add collision boxes for Scout & Vera's desks (custom positions from AGENTS array)
+  // Scout: deskPos { x: 375, y: 155 }, Vera: deskPos { x: 465, y: 155 }
+  // Desk size ~80x18, chair offset by y+30
+  const scoutDesk = AGENTS.find(a => a.name === 'Scout')?.deskPos;
+  const veraDesk = AGENTS.find(a => a.name === 'Vera')?.deskPos;
+  if (scoutDesk) {
+    COLLISION_BOXES.push({ x: scoutDesk.x - 40, y: scoutDesk.y - 10, w: 80, h: 18 }); // Scout's desk
+    COLLISION_BOXES.push({ x: scoutDesk.x - 40, y: scoutDesk.y + 18, w: 18, h: 8 }); // Scout's chair
+  }
+  if (veraDesk) {
+    COLLISION_BOXES.push({ x: veraDesk.x - 40, y: veraDesk.y - 10, w: 80, h: 18 }); // Vera's desk
+    COLLISION_BOXES.push({ x: veraDesk.x - 40, y: veraDesk.y + 18, w: 18, h: 8 }); // Vera's chair
+  }
 }
 
 // Check if a point collides with any obstacle
@@ -2620,6 +2641,14 @@ class AgentEntity {
     if (this.frameTimer > 0.25) { this.frame = (this.frame+1)%2; this.frameTimer = 0; }
     this.stateTimer -= dt * 1000;
 
+    // DEBUG: Log state changes
+    if (this.state !== this._lastState || this.target.x !== this._lastTargetX || this.target.y !== this._lastTargetY) {
+      console.log(`[Agent ${this.name}] State: ${this.state} -> Timer: ${this.stateTimer.toFixed(0)}ms | Pos: (${this.x.toFixed(0)}, ${this.y.toFixed(0)}) Target: (${this.target.x.toFixed(0)}, ${this.target.y.toFixed(0)})`);
+      this._lastState = this.state;
+      this._lastTargetX = this.target.x;
+      this._lastTargetY = this.target.y;
+    }
+
     // Update target if meeting state changed
     const targetPos = this.getTargetPos();
 
@@ -2638,6 +2667,14 @@ class AgentEntity {
         this.moveToTarget(dt);
         break;
       case 'wandering':
+        // Check if wander time is up
+        if (this.stateTimer <= 0) {
+          // Wander time is done, go idle
+          console.log(`[Agent ${this.name}] Wander timer expired, going idle`);
+          this.state = 'idle';
+          this.stateTimer = 2000 + Math.random() * 4000;
+          break;
+        }
         // Only wander if not in meeting
         if (meetingActive) {
           this.state = 'walking_to_desk';
@@ -2705,12 +2742,34 @@ class AgentEntity {
     const newX = this.x + mx;
     const newY = this.y + my;
     
-    // Check collision - if collision, find valid position
+    // Check collision - if collision, try to find alternate path
     if (checkCollision(newX, newY, 10)) {
-      const valid = findValidPosition(this.target.x, this.target.y, 10);
-      this.target.x = valid.x;
-      this.target.y = valid.y;
-      // Don't update position this frame - try again next frame
+      // First, try moving only horizontally
+      if (!checkCollision(this.x + mx, this.y, 10)) {
+        this.x += mx;
+        console.log(`[Agent ${this.name}] Collision avoid: moved horizontal only`);
+      } 
+      // Then try moving only vertically
+      else if (!checkCollision(this.x, this.y + my, 10)) {
+        this.y += my;
+        console.log(`[Agent ${this.name}] Collision avoid: moved vertical only`);
+      }
+      // Finally, try finding a valid position near current spot
+      else {
+        const valid = findValidPosition(this.x + mx*3, this.y + my*3, 10);
+        if (valid.x !== this.x + mx*3 || valid.y !== this.y + my*3) {
+          // Found different position, update target to it
+          this.target.x = valid.x;
+          this.target.y = valid.y;
+          console.log(`[Agent ${this.name}] Collision: rerouting to (${valid.x.toFixed(0)}, ${valid.y.toFixed(0)})`);
+        } else {
+          // Can't find path, just move anyway (better than stuck)
+          this.x = newX;
+          this.y = newY;
+          console.log(`[Agent ${this.name}] Collision: forcing through (rare fallback)`);
+        }
+      }
+      if (Math.abs(dx) > 2) this.facing = dx > 0 ? 1 : -1;
       return;
     }
     
@@ -2724,6 +2783,7 @@ class AgentEntity {
     if (meetingActive) {
       this.state = 'walking_to_desk';
       this.target = this.getTargetPos();
+      console.log(`[Agent ${this.name}] Meeting active, going to desk instead`);
       return;
     }
     
@@ -2735,6 +2795,8 @@ class AgentEntity {
     this.idleIndex = (this.idleIndex || 0) % idleLocs.length;
     const locType = idleLocs[this.idleIndex];
     this.idleIndex++;
+    
+    console.log(`[Agent ${this.name}] startWander: going to '${locType}' (idleIndex=${this.idleIndex} of ${idleLocs.length})`);
     
     this.state = 'wandering';
     
@@ -2778,8 +2840,8 @@ class AgentEntity {
         targetSpot = { x: ROOMS[3].x + 60, y: ROOMS[3].y + 60 };
         break;
       case 'galley':
-        // Galley/kitchen area
-        targetSpot = { x: ROOMS[2].x + 80, y: ROOMS[2].y + 60 };
+        // Galley/kitchen area - position below the counter (avoid collision box at y=280)
+        targetSpot = { x: ROOMS[2].x + 80, y: ROOMS[2].y + 100 };
         break;
       case 'rec':
         // Recreation lounge
@@ -3107,6 +3169,29 @@ function drawExpandedCard(ctx, ent, x, y, cardWidth = 160, cardHeight = 90) {
   ctx.fillStyle = C.barDim;
   ctx.font = '7px "JetBrains Mono"';
   ctx.fillText('(tap to close)', x + 8, y + cardHeight - 4);
+  
+  // Recent Comms section (if expanded card is tall enough)
+  if (cardHeight >= 120 && commsData.length > 0) {
+    const agentComms = commsData.filter(c => c.from === ent.name || c.to === ent.name).slice(-3);
+    if (agentComms.length > 0) {
+      ctx.fillStyle = '#3A4A5E';
+      ctx.fillRect(x + 8, y + 95, cardWidth - 16, 1); // Separator line
+      
+      ctx.fillStyle = C.barDim;
+      ctx.font = 'bold 7px "JetBrains Mono"';
+      ctx.fillText('RECENT COMMS', x + 8, y + 104);
+      
+      ctx.font = '6px "JetBrains Mono"';
+      agentComms.forEach((comm, idx) => {
+        const commY = y + 114 + (idx * 10);
+        const direction = comm.from === ent.name ? '→' : '←';
+        const otherParty = comm.from === ent.name ? comm.to : comm.from;
+        const shortMsg = comm.message.length > 30 ? comm.message.substring(0, 30) + '...' : comm.message;
+        ctx.fillStyle = comm.from === ent.name ? '#5A7A9A' : '#7A9A5A';
+        ctx.fillText(`${direction} ${otherParty}: ${shortMsg}`, x + 8, commY);
+      });
+    }
+  }
 }
 
 // ===== CHUNK 3: MOBILE STATUS BAR =====
@@ -3148,7 +3233,7 @@ function drawCompactStatusBar() {
       const cardX = START_X;
       const cardY = START_Y + gridHeight + 8;
       
-      drawExpandedCard(ctx, ent, cardX, cardY, 160, 85);
+      drawExpandedCard(ctx, ent, cardX, cardY, 200, 150);
     } else {
       // Edge case: agent not found, clear selection
       selectedAgent = null;
@@ -5183,6 +5268,7 @@ function getModelColor(model) {
 // Status board data
 let todosData = [];
 let activityData = [];
+let commsData = []; // Agent-to-agent communications
 let proposalsData = [];
 let modelStatsData = {}; // Model performance stats
 let agentsData = {}; // Map of agent name -> agent data (for colors)
@@ -5199,12 +5285,13 @@ let agentSessionModels = {}; // Map of agent name -> current model
 // Fetch todos and activity data
 async function fetchStatusBoardData() {
   try {
-    const [todosRes, activityRes, statusRes, modelRes, proposalsRes] = await Promise.all([
+    const [todosRes, activityRes, statusRes, modelRes, proposalsRes, commsRes] = await Promise.all([
       fetch('/api/todos'),
       fetch('/api/todos/activity'),
       fetch('/api/employee-status'),
       fetch('/api/model-stats'),
-      fetch('/api/proposals')
+      fetch('/api/proposals'),
+      fetch('/api/agent-comms')
     ]);
     todosData = await todosRes.json();
     activityData = await activityRes.json();
@@ -5212,6 +5299,12 @@ async function fetchStatusBoardData() {
       proposalsData = await proposalsRes.json();
     } catch(e) {
       proposalsData = [];
+    }
+    // Store comms data
+    try {
+      commsData = await commsRes.json();
+    } catch(e) {
+      commsData = [];
     }
     // Add expChange display field
     activityData.forEach(act => {
