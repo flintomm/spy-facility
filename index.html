@@ -3027,7 +3027,7 @@ let cardPositions = [];
 // Handle resize to switch modes
 window.addEventListener('resize', () => {
   isMobile = window.innerWidth < 600;
-  if (!isMobile) selectedAgent = null; // Clear selection on desktop
+  // Keep selectedAgent on resize - don't clear
 });
 
 // ===== CHUNK 1: COMPACT CHIP RENDERING =====
@@ -4211,7 +4211,12 @@ function handleStatusBarClick(mouseX, mouseY) {
   for (const pos of cardPositions) {
     if (mouseX >= pos.x && mouseX <= pos.x + pos.width &&
         mouseY >= pos.y && mouseY <= pos.y + pos.height) {
-      // Reserved for future interaction (agent detail panel, etc.)
+      // Toggle expanded card for this agent
+      if (selectedAgent === pos.name) {
+        selectedAgent = null; // Close if already open
+      } else {
+        selectedAgent = pos.name; // Open this agent's card
+      }
       return;
     }
   }
